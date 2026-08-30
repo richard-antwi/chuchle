@@ -18,6 +18,7 @@ export default function PixiStage() {
   const textContainerRef = useRef<Container | null>(null)
   const bgGraphicsRef = useRef<Graphics | null>(null)
   const cameraContainerRef = useRef<Container | null>(null)
+  const bgSpriteRef = useRef<Sprite | null>(null)
 
   const activeStreamRef = useRef<MediaStream | null>(null)
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
@@ -84,6 +85,7 @@ export default function PixiStage() {
       appRef.current = null
       textContainerRef.current = null
       bgGraphicsRef.current = null
+      bgSpriteRef.current = null
       cameraContainerRef.current = null
       cameraSpriteRef.current = null
       colorMatrixRef.current = null
@@ -196,9 +198,25 @@ export default function PixiStage() {
     }
 
     bgGraphics.clear()
-    if (background.type === 'color') {
-      bgGraphics.rect(0, 0, width, height)
-      bgGraphics.fill({ color: background.value })
+    let bgSprite = bgSpriteRef.current
+    if (background.type === 'image') {
+      if (!bgSprite) {
+        bgSprite = new Sprite()
+        app.stage.addChildAt(bgSprite, 0)
+        bgSpriteRef.current = bgSprite
+      }
+      bgSprite.texture = Texture.from(background.value)
+      bgSprite.width = width
+      bgSprite.height = height
+      bgSprite.visible = true
+    } else {
+      if (bgSprite) {
+        bgSprite.visible = false
+      }
+      if (background.type === 'color') {
+        bgGraphics.rect(0, 0, width, height)
+        bgGraphics.fill({ color: background.value })
+      }
     }
 
     while (textContainer.children.length > 0) {

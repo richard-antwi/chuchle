@@ -5,6 +5,8 @@ import { useAudioStore } from '../stores/useAudioStore'
 import { WebAudioMixer } from '../services/WebAudioMixer'
 import { CameraService, CameraDevice } from '../services/CameraService'
 import { TranscriptionService } from '../services/TranscriptionService'
+import { ObsControllerService } from '../services/ObsControllerService'
+import { SlideImporter } from '../services/SlideImporter'
 
 interface DisplayInfo {
   id: number
@@ -35,10 +37,35 @@ export default function OperatorDashboard() {
   const [transcriberMsg, setTranscriberMsg] = useState('')
   const [transcriptLog, setTranscriptLog] = useState<string[]>([])
 
+  // OBS Automation states
+  const [obsConnected, setObsConnected] = useState(false)
+  const [obsStatusMsg, setObsStatusMsg] = useState('Disconnected.')
+  const [obsScenes, setObsScenes] = useState<string[]>([])
+  const obsHost = '127.0.0.1'
+  const [obsPort, setObsPort] = useState('4455')
+  const [obsPassword, setObsPassword] = useState('')
+  const [obsMappings, setObsMappings] = useState<Record<string, string>>({
+    VERSE: '',
+    CHORUS: '',
+    BRIDGE: '',
+    BIBLE: '',
+    VIDEO: '',
+    OTHER: ''
+  })
+
+  // Center Presentation Deck states
+  const [activeCenterTab, setActiveCenterTab] = useState<'lyrics' | 'pdf'>('lyrics')
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [extractingPdf, setExtractingPdf] = useState(false)
+  const [pdfSlides, setPdfSlides] = useState<{ slideNumber: number; imageUrl: string }[]>([])
+  const [selectedPdfSlideIndex, setSelectedPdfSlideIndex] = useState<number | null>(null)
+
   // Zustand Store Hooks
   const activeLyrics = useDisplayStore((state) => state.currentLyrics)
   const setLyrics = useDisplayStore((state) => state.setLyrics)
   const setStageInfo = useDisplayStore((state) => state.setStageInfo)
+  const activeBackground = useDisplayStore((state) => state.activeBackground)
+  const setBackground = useDisplayStore((state) => state.setBackground)
 
   const activeCameraDeviceId = useDisplayStore((state) => state.activeCameraDeviceId)
   const colorGrading = useDisplayStore((state) => state.colorGrading)
@@ -79,6 +106,13 @@ export default function OperatorDashboard() {
       }
     }
     setStageInfo({ nextVerse: nextSlideText })
+
+    // Trigger OBS scene switching
+    ObsControllerService.handleSlideTransition(
+      section.label,
+      slideText,
+      activeBackground.type === 'video'
+    )
   }
 
   useEffect(() => {
@@ -120,6 +154,7 @@ export default function OperatorDashboard() {
       if (intervalId) clearInterval(intervalId)
       WebAudioMixer.cleanup()
       TranscriptionService.destroy()
+      ObsControllerService.disconnect()
     }
   }, [])
 
@@ -255,6 +290,70 @@ export default function OperatorDashboard() {
         }
       })
     }
+  }
+
+  // OBS Connect Handler
+  const toggleObsConnection = async () => {
+    if (obsConnected) {
+      await ObsControllerService.disconnect()
+      setObsConnected(false)
+      setObsStatusMsg('Disconnected.')
+      setObsScenes([])
+    } else {
+      setObsStatusMsg('Connecting...')
+      const success = await ObsControllerService.connect(
+        obsHost,
+        Number(obsPort),
+        obsPassword,
+        (connected, msg) => {
+          setObsConnected(connected)
+          setObsStatusMsg(msg || '')
+          if (connected) {
+            setObsScenes(ObsControllerService.getScenes())
+          }
+        }
+      )
+      if (!success) {
+        setObsConnected(false)
+      }
+    }
+  }
+
+  const updateObsMapping = (category: string, scene: string) => {
+    const updated = { ...obsMappings, [category]: scene }
+    setObsMappings(updated)
+    ObsControllerService.setMappings(updated)
+  }
+
+  // PDF Slide Importer Handlers
+  const handleImportPdf = async () => {
+    if (!pdfFile) return
+    setExtractingPdf(true)
+    try {
+      const slides = await SlideImporter.extractSlidesFromPdf(pdfFile)
+      setPdfSlides(slides)
+      setSelectedPdfSlideIndex(null)
+    } catch (error) {
+      console.error('Failed to extract PDF slides:', error)
+    } finally {
+      setExtractingPdf(false)
+    }
+  }
+
+  const projectPdfSlide = (index: number) => {
+    setSelectedPdfSlideIndex(index)
+    const target = pdfSlides[index]
+    if (target) {
+      setBackground({ type: 'image', value: target.imageUrl })
+      setLyrics([])
+      setStageInfo({ nextVerse: `Slide ${index + 2} of ${pdfSlides.length}` })
+    }
+  }
+
+  const clearPdfSlides = () => {
+    setPdfSlides([])
+    setSelectedPdfSlideIndex(null)
+    setPdfFile(null)
   }
 
   return (
@@ -522,66 +621,247 @@ export default function OperatorDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* OBS Studio Automation */}
+            <div className="mt-6 border-t border-slate-800 pt-6 space-y-4">
+              <h2 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-rose-500"></span>
+                OBS Studio Automation
+              </h2>
+
+              <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-500 uppercase font-semibold">Port</label>
+                    <input
+                      type="number"
+                      value={obsPort}
+                      onChange={(e) => setObsPort(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-850 rounded px-2.5 py-1 text-slate-300 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-500 uppercase font-semibold">Password</label>
+                    <input
+                      type="password"
+                      value={obsPassword}
+                      onChange={(e) => setObsPassword(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-850 rounded px-2.5 py-1 text-slate-300 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        obsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'
+                      }`}
+                    ></span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      {obsStatusMsg}
+                    </span>
+                  </div>
+                  <button
+                    onClick={toggleObsConnection}
+                    className="px-2.5 py-1 bg-slate-900 hover:bg-slate-855 border border-slate-800 transition duration-150 rounded text-xs font-bold cursor-pointer text-slate-300"
+                  >
+                    {obsConnected ? 'Disconnect' : 'Connect'}
+                  </button>
+                </div>
+              </div>
+
+              {obsConnected && obsScenes.length > 0 && (
+                <div className="space-y-2 text-xs">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    OBS SCENE MAPPINGS
+                  </span>
+                  <div className="space-y-2 max-h-[150px] overflow-y-auto bg-slate-950 p-2.5 border border-slate-850 rounded-lg">
+                    {Object.keys(obsMappings).map((category) => (
+                      <div key={category} className="flex items-center justify-between gap-3 text-slate-400">
+                        <span className="font-mono text-[10px] uppercase font-bold">{category}:</span>
+                        <select
+                          value={obsMappings[category]}
+                          onChange={(e) => updateObsMapping(category, e.target.value)}
+                          className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none cursor-pointer"
+                        >
+                          <option value="">-- No Action --</option>
+                          {obsScenes.map((scene) => (
+                            <option key={scene} value={scene}>
+                              {scene}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </section>
-
-        {/* Center/Right Col: Lyric Reflow Parser Sandbox */}
+        {/* Center/Right Col: Lyric Reflow Parser Sandbox / PDF Slide Importer */}
         <section className="lg:col-span-2 bg-slate-900/50 border border-slate-800/80 rounded-xl p-5 backdrop-blur-md flex flex-col">
-          <h2 className="text-lg font-bold text-slate-300 mb-2">Smart Lyric Auto-Reflow Sandbox</h2>
-          <p className="text-xs text-slate-500 mb-4">
-            Test the live lyric parser. Paste raw lyrics below, set lines per slide (tested with 2 lines/slide), and generate slides.
-          </p>
-
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            className="w-full h-36 bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none text-slate-300 resize-none"
-          />
-
-          <button
-            onClick={handleReflow}
-            className="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-500 active:bg-purple-700 transition duration-200 text-sm font-semibold rounded-lg self-start shadow-md shadow-purple-900/40"
-          >
-            Run Reflow Logic
-          </button>
-
-          {/* Reflow Output */}
-          <div className="mt-6 flex-1">
-            <h3 className="text-sm font-semibold text-slate-400 mb-3">Reflowed Slides Preview</h3>
-            {reflowed.length === 0 ? (
-              <div className="h-28 border border-dashed border-slate-800 rounded-lg flex items-center justify-center text-slate-600 text-sm">
-                No reflowed text generated yet. Click "Run Reflow Logic".
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
-                {reflowed.map((sec, sIdx) => (
-                  <div key={sIdx} className="bg-slate-950 border border-slate-800/60 rounded-lg p-4">
-                    <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
-                      {sec.label} ({sec.type})
-                    </span>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                      {sec.slides.map((slide, slideIdx) => {
-                        const isCurrent = activeLyrics.join('\n') === slide
-                        return (
-                          <div
-                            key={slideIdx}
-                            onClick={() => projectSlide(sec, slide, slideIdx)}
-                            className={`cursor-pointer transition duration-150 border rounded p-3 text-xs font-medium min-h-[50px] whitespace-pre-wrap flex items-center select-none ${
-                              isCurrent
-                                ? 'bg-indigo-950 border-indigo-500 text-indigo-200 shadow-md shadow-indigo-900/20'
-                                : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
-                            }`}
-                          >
-                            {slide}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+            <h2 className="text-lg font-bold text-slate-300">Presentation Deck Console</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveCenterTab('lyrics')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition duration-155 cursor-pointer ${
+                  activeCenterTab === 'lyrics'
+                    ? 'bg-indigo-600 text-slate-50 font-bold'
+                    : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Lyrics Reflow Sandbox
+              </button>
+              <button
+                onClick={() => setActiveCenterTab('pdf')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition duration-155 cursor-pointer ${
+                  activeCenterTab === 'pdf'
+                    ? 'bg-indigo-600 text-slate-50 font-bold'
+                    : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                PDF Slide Importer
+              </button>
+            </div>
           </div>
+
+          {activeCenterTab === 'lyrics' && (
+            <div className="space-y-4 flex-1 flex flex-col">
+              <p className="text-xs text-slate-500">
+                Test the live lyric parser. Paste raw lyrics below, set lines per slide (tested with 2 lines/slide), and generate slides.
+              </p>
+
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="[Verse 1]&#10;This is raw lyric lines...&#10;Paste song text here."
+                className="w-full h-32 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-300 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none font-mono"
+              />
+
+              <div className="flex gap-4 items-center">
+                <button
+                  onClick={handleReflow}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 transition duration-150 rounded-lg text-xs font-bold text-slate-100 shadow-md shadow-indigo-950/20 cursor-pointer"
+                >
+                  Parse & Reflow Lyrics
+                </button>
+                <div className="text-xs text-slate-500">
+                  Auto-formats sections like Verse, Chorus, Bridge, tags, etc.
+                </div>
+              </div>
+
+              {reflowed.length > 0 && (
+                <div className="mt-3 flex-1 flex flex-col space-y-3">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    REFLOWED SECTIONS
+                  </span>
+
+                  <div className="space-y-4 overflow-y-auto max-h-[300px] bg-slate-950/40 p-4 border border-slate-850 rounded-lg">
+                    {reflowed.map((section, secIdx) => (
+                      <div key={secIdx} className="space-y-2">
+                        <div className="text-xs font-extrabold text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
+                          {section.label}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {section.slides.map((slide, slideIdx) => {
+                            const isSelected = activeLyrics.join('\n') === slide
+                            return (
+                              <div
+                                key={slideIdx}
+                                onClick={() => projectSlide(section, slide, slideIdx)}
+                                className={`p-3 rounded-lg border text-left cursor-pointer transition duration-155 text-xs font-medium leading-relaxed whitespace-pre-line ${
+                                  isSelected
+                                    ? 'bg-indigo-950/40 border-indigo-500 text-slate-100 shadow-sm'
+                                    : 'bg-slate-900/30 border-slate-800 text-slate-400 hover:border-slate-700'
+                                }`}
+                              >
+                                {slide}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeCenterTab === 'pdf' && (
+            <div className="space-y-5 flex-1 flex flex-col">
+              <p className="text-xs text-slate-500">
+                Upload a multi-page PDF presentation deck. Each page will be extracted as a high-resolution slide texture.
+              </p>
+
+              <div className="flex items-center gap-4 bg-slate-950/50 p-4 border border-slate-855 rounded-lg">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                  className="text-xs text-slate-350 focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-900 file:text-slate-300 hover:file:bg-slate-855 cursor-pointer file:cursor-pointer flex-1"
+                />
+                <button
+                  onClick={handleImportPdf}
+                  disabled={!pdfFile || extractingPdf}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 transition duration-150 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer"
+                >
+                  {extractingPdf ? 'Extracting...' : 'Extract Slides'}
+                </button>
+              </div>
+
+              {pdfSlides.length > 0 && (
+                <div className="flex-1 flex flex-col space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                      EXTRACTED SLIDES ({pdfSlides.length})
+                    </span>
+                    <button
+                      onClick={clearPdfSlides}
+                      className="text-xs text-rose-455 hover:text-rose-400 font-bold transition duration-155 cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 overflow-y-auto max-h-[300px] bg-slate-950/40 p-3 border border-slate-850 rounded-lg">
+                    {pdfSlides.map((slide, idx) => (
+                      <div
+                        key={slide.slideNumber}
+                        onClick={() => projectPdfSlide(idx)}
+                        className={`group relative aspect-[4/3] border rounded-lg overflow-hidden cursor-pointer transition duration-155 ${
+                          selectedPdfSlideIndex === idx
+                            ? 'border-indigo-500 shadow-md shadow-indigo-950/30'
+                            : 'border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <img
+                          src={slide.imageUrl}
+                          alt={`Slide ${slide.slideNumber}`}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/45 group-hover:bg-slate-950/15 flex items-end justify-between p-2">
+                          <span className="text-[10px] bg-slate-950/80 px-2 py-0.5 rounded text-slate-300 font-mono font-bold">
+                            Pg {slide.slideNumber}
+                          </span>
+                          {selectedPdfSlideIndex === idx && (
+                            <span className="text-[9px] bg-indigo-600 px-1.5 py-0.5 rounded text-slate-100 font-bold uppercase tracking-wider">
+                              LIVE
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </section>
       </div>
 

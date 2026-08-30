@@ -3,6 +3,7 @@ import AudienceView from './views/AudienceView'
 import StageView from './views/StageView'
 import FoyerView from './views/FoyerView'
 import OperatorDashboard from './views/OperatorDashboard'
+import LowerThirdView from './views/LowerThirdView'
 
 function App(): React.JSX.Element {
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
@@ -27,6 +28,8 @@ function App(): React.JSX.Element {
       return <StageView />
     case 'foyer':
       return <FoyerView />
+    case 'lowerthird':
+      return <LowerThirdView />
     case 'operator':
     default:
       return <OperatorDashboard />

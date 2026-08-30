@@ -29,6 +29,8 @@
     "better-sqlite3": "^13.0.3",
     "fastify": "^5.12.1",
     "immer": "^11.1.18",
+    "obs-websocket-js": "^5.0.8",
+    "pdfjs-dist": "^6.3.289",
     "pixi.js": "^8.20.1",
     "socket.io": "^4.8.3",
     "zustand": "^5.0.15"

@@ -4,6 +4,7 @@ import { useDisplayStore } from '../stores/useDisplayStore'
 import { useAudioStore } from '../stores/useAudioStore'
 import { WebAudioMixer } from '../services/WebAudioMixer'
 import { CameraService, CameraDevice } from '../services/CameraService'
+import { TranscriptionService } from '../services/TranscriptionService'
 
 interface DisplayInfo {
   id: number
@@ -24,6 +25,15 @@ export default function OperatorDashboard() {
   const [vlcInfo, setVlcInfo] = useState<any>(null)
   const [micActive, setMicActive] = useState(false)
   const [musicActive, setMusicActive] = useState(false)
+
+  // Web Remote state
+  const [remoteUrl, setRemoteUrl] = useState('')
+
+  // AI Transcriber states
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [transcriberStatus, setTranscriberStatus] = useState('idle')
+  const [transcriberMsg, setTranscriberMsg] = useState('')
+  const [transcriptLog, setTranscriptLog] = useState<string[]>([])
 
   // Zustand Store Hooks
   const activeLyrics = useDisplayStore((state) => state.currentLyrics)
@@ -99,9 +109,17 @@ export default function OperatorDashboard() {
       intervalId = setInterval(queryStatus, 1000)
     }
 
+    // Query remote server URL
+    if (window.electron && window.electron.ipcRenderer) {
+      window.electron.ipcRenderer.invoke('get-remote-url').then((url) => {
+        setRemoteUrl(url)
+      })
+    }
+
     return () => {
       if (intervalId) clearInterval(intervalId)
       WebAudioMixer.cleanup()
+      TranscriptionService.destroy()
     }
   }, [])
 
@@ -110,6 +128,20 @@ export default function OperatorDashboard() {
       window.electron.ipcRenderer.send('reposition-displays')
     }
   }
+
+  // Listen to mobile remote actions
+  useEffect(() => {
+    if (window.electron && window.electron.ipcRenderer) {
+      window.electron.ipcRenderer.on('remote-slide-action', (_event, action) => {
+        handleRemoteSlideAction(action)
+      })
+    }
+    return () => {
+      if (window.electron && window.electron.ipcRenderer) {
+        window.electron.ipcRenderer.removeAllListeners('remote-slide-action')
+      }
+    }
+  }, [reflowed, activeLyrics])
 
   const handleReflow = () => {
     const res = parseAndReflowRawLyrics(inputText, 2)
@@ -174,6 +206,55 @@ export default function OperatorDashboard() {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Web Remote Slide Actions
+  const handleRemoteSlideAction = (action: 'next' | 'prev') => {
+    const flatSlides: { section: ReflowedSection; slide: string; slideIdx: number }[] = []
+    reflowed.forEach((sec) => {
+      sec.slides.forEach((slide, idx) => {
+        flatSlides.push({ section: sec, slide, slideIdx: idx })
+      })
+    })
+
+    if (flatSlides.length === 0) return
+
+    const currentText = activeLyrics.join('\n')
+    const currentIdx = flatSlides.findIndex((item) => item.slide === currentText)
+
+    let targetIdx = -1
+    if (action === 'next') {
+      if (currentIdx === -1) targetIdx = 0
+      else if (currentIdx + 1 < flatSlides.length) targetIdx = currentIdx + 1
+    } else {
+      if (currentIdx > 0) targetIdx = currentIdx - 1
+    }
+
+    if (targetIdx !== -1) {
+      const target = flatSlides[targetIdx]
+      projectSlide(target.section, target.slide, target.slideIdx)
+    }
+  }
+
+  // AI Transcription Toggler
+  const toggleTranscription = () => {
+    if (isTranscribing) {
+      TranscriptionService.stop()
+      setIsTranscribing(false)
+      setTranscriberStatus('idle')
+      setTranscriberMsg('Stopped.')
+    } else {
+      setIsTranscribing(true)
+      setTranscriberStatus('loading')
+      TranscriptionService.start((status, text) => {
+        setTranscriberStatus(status)
+        if (status === 'loading' || status === 'ready' || status === 'error') {
+          setTranscriberMsg(text || '')
+        } else if (status === 'result' && text) {
+          setTranscriptLog((prev) => [...prev, text])
+        }
+      })
+    }
   }
 
   return (
@@ -351,6 +432,95 @@ export default function OperatorDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Wireless Web Remote */}
+            <div className="mt-6 border-t border-slate-800 pt-6 space-y-3">
+              <h2 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+                Wireless Web Remote
+              </h2>
+              {remoteUrl ? (
+                <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs space-y-1.5">
+                  <div className="text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                    SCAN OR GO TO URL
+                  </div>
+                  <a
+                    href={remoteUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-indigo-400 hover:text-indigo-300 underline font-mono break-all block"
+                  >
+                    {remoteUrl}
+                  </a>
+                  <div className="text-slate-500 text-[10px]">
+                    Ensure mobile device is on the same WiFi/local network.
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">Initializing remote network url...</p>
+              )}
+            </div>
+
+            {/* AI Speech-to-Text Transcriber */}
+            <div className="mt-6 border-t border-slate-800 pt-6 space-y-4">
+              <h2 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+                AI Local Transcriber
+              </h2>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Local Whisper Speech-to-Text</span>
+                <button
+                  onClick={toggleTranscription}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition duration-150 cursor-pointer ${
+                    isTranscribing
+                      ? 'bg-rose-950 border-rose-500 text-rose-200 animate-pulse'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  {isTranscribing ? 'Stop Transcriber' : 'Start Transcriber'}
+                </button>
+              </div>
+
+              {/* Status Indicator */}
+              {transcriberStatus !== 'idle' && (
+                <div className="p-2.5 bg-slate-950 border border-slate-850 rounded-lg text-xs space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        transcriberStatus === 'loading'
+                          ? 'bg-yellow-500 animate-pulse'
+                          : transcriberStatus === 'ready'
+                            ? 'bg-emerald-500 animate-pulse'
+                            : 'bg-rose-500'
+                      }`}
+                    ></span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      Status: {transcriberStatus}
+                    </span>
+                  </div>
+                  {transcriberMsg && <p className="text-[10px] text-slate-500">{transcriberMsg}</p>}
+                </div>
+              )}
+
+              {/* Log output */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  REAL-TIME TRANSCRIPT LOG
+                </span>
+                <div className="h-24 bg-slate-950 border border-slate-850 rounded-lg p-2 overflow-y-auto text-[11px] font-mono text-slate-400 space-y-1.5 animate-pulse-slow">
+                  {transcriptLog.length === 0 ? (
+                    <span className="text-slate-600 italic">No speech captured yet.</span>
+                  ) : (
+                    transcriptLog.map((line, idx) => (
+                      <div key={idx} className="border-b border-slate-900/50 pb-1">
+                        <span className="text-[9px] text-indigo-500">[{idx + 1}]</span> {line}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </section>

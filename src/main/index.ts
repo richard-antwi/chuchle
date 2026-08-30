@@ -5,8 +5,10 @@ import icon from '../../resources/icon.png?asset'
 import { initDatabase } from './db'
 import { DisplayService } from './services/DisplayService'
 import { VlcMediaService } from './services/VlcMediaService'
+import { RemoteControllerService } from './services/RemoteControllerService'
 
 let vlcService: VlcMediaService
+let remoteService: RemoteControllerService
 
 function createWindow(): void {
   // Create the browser window.
@@ -54,6 +56,9 @@ app.whenReady().then(() => {
   // Initialize VLC Media client
   vlcService = new VlcMediaService()
 
+  // Initialize Web Remote Controller server
+  remoteService = new RemoteControllerService()
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -87,6 +92,11 @@ app.whenReady().then(() => {
         win.webContents.send('projection-state-updated', state)
       }
     })
+  })
+
+  // Query Web Remote connection URL
+  ipcMain.handle('get-remote-url', () => {
+    return remoteService ? remoteService.getLocalUrl() : ''
   })
 
   // VLC Media Remote Control IPC handler
@@ -124,6 +134,12 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
+  }
+})
+
+app.on('will-quit', () => {
+  if (remoteService) {
+    remoteService.close()
   }
 })
 

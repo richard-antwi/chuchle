@@ -79,10 +79,10 @@ html, body, #root {
   cursor: pointer;
 }
 .tbtn svg { width: 18px; height: 18px; stroke: var(--text-2); fill: none; stroke-width: 1.6; }
-.tbtn:hover { background: #333333; }
+.tbtn:hover { background: var(--border); }
 .tbtn.active {
   background: var(--accent-bg);
-  border-color: #2b73d2;
+  border-color: var(--accent);
   color: #ffffff;
 }
 .tbtn.active svg { stroke: #ffffff; }
@@ -94,7 +94,7 @@ html, body, #root {
   padding: 6px 14px;
   background: var(--live-bg);
   color: var(--live);
-  border: 1px solid #f4c6c2;
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-weight: 600;
   font-size: 12px;
@@ -130,7 +130,7 @@ html, body, #root {
   cursor: pointer; font-size: 12.5px; margin-bottom: 1px;
   display: flex; align-items: center; gap: 8px;
 }
-.lib-item:hover { background: #f2f4f7; }
+.lib-item:hover { background: var(--toolbar); }
 .lib-item.sel { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
 .lib-item svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.6; flex-shrink: 0; }
 .lib-section-label {
@@ -151,14 +151,14 @@ html, body, #root {
   padding: 9px 9px; border-radius: 6px; margin-bottom: 2px;
   cursor: pointer; border: 1px solid transparent;
 }
-.svc-item:hover { background: #f6f7f9; }
+.svc-item:hover { background: var(--toolbar); }
 .svc-item.current {
-  background: var(--live-bg); border-color: #f4c6c2;
+  background: var(--live-bg); border-color: var(--live);
 }
 .svc-icon {
   width: 26px; height: 26px; border-radius: 5px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: #eef0f3; color: var(--text-2);
+  background: var(--toolbar); color: var(--text-2);
 }
 .svc-icon svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.7; }
 .svc-item.current .svc-icon { background: var(--live); color: #fff; }

@@ -58,22 +58,22 @@ export default function BibleView({ onProjectBible }: BibleViewProps) {
   }
 
   return (
-    <div className="h-full flex flex-col space-y-5 overflow-y-auto p-6 select-none bg-[#eef0f3] text-[#22262c]">
+    <div className="h-full flex flex-col space-y-5 overflow-y-auto p-6 select-none bg-app-bg text-app-text">
       {/* Top Search Card */}
-      <div className="bg-white border border-[#d7dbe1] p-5 rounded-xl shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-[#d7dbe1] pb-3">
-          <h2 className="text-sm font-black text-[#22262c] uppercase tracking-wider flex items-center gap-2">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#2f6fed" fill="none" strokeWidth="2">
+      <div className="bg-app-panel border border-app-border p-5 rounded-xl shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-app-border pb-3">
+          <h2 className="text-sm font-black text-app-text uppercase tracking-wider flex items-center gap-2">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2" className="text-app-accent">
               <path d="M4 5c4 0 6 1 8 3 2-2 4-3 8-3v14c-4 0-6 1-8 3-2-2-4-3-8-3z" />
             </svg>
             Scripture Lookup & Parallel Translations
           </h2>
-          <span className="text-xs font-mono text-[#5b6270]">BIBLE ENGINE</span>
+          <span className="text-xs font-mono text-app-text-3">BIBLE ENGINE</span>
         </div>
 
         {/* Translation Pills Selection */}
         <div className="space-y-1.5">
-          <label className="text-[11px] text-[#5b6270] uppercase font-bold tracking-wider">
+          <label className="text-[11px] text-app-text-2 uppercase font-bold tracking-wider">
             Parallel Translations (Select up to 3)
           </label>
           <div className="flex gap-2 flex-wrap">
@@ -96,11 +96,11 @@ export default function BibleView({ onProjectBible }: BibleViewProps) {
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition duration-150 cursor-pointer flex items-center gap-1.5 ${
                     isSelected
-                      ? 'bg-[#e8f0fe] border border-[#c6d9fb] text-[#2f6fed] shadow-sm'
-                      : 'bg-[#f6f7f9] border border-[#d7dbe1] text-[#5b6270] hover:text-[#22262c]'
+                      ? 'bg-app-accent-bg border border-app-accent/30 text-app-accent shadow-sm'
+                      : 'bg-app-toolbar border border-app-border text-app-text-2 hover:text-app-text'
                   }`}
                 >
-                  <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-[#2f6fed]' : 'bg-slate-400'}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-app-accent' : 'bg-app-text-3'}`} />
                   {t.name} ({t.id})
                 </button>
               )
@@ -111,28 +111,28 @@ export default function BibleView({ onProjectBible }: BibleViewProps) {
         {/* Passage Search Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs items-end pt-1">
           <div className="md:col-span-2 space-y-1">
-            <label className="text-[11px] text-[#5b6270] uppercase font-bold">Book Name</label>
+            <label className="text-[11px] text-app-text-2 uppercase font-bold">Book Name</label>
             <input
               type="text"
               value={bibleBook}
               onChange={(e) => setBibleBook(e.target.value)}
-              className="w-full bg-[#f6f7f9] border border-[#d7dbe1] rounded-lg px-3 py-2 text-[#22262c] font-semibold focus:outline-none focus:border-[#2f6fed] focus:bg-white"
+              className="w-full bg-app-toolbar border border-app-border rounded-lg px-3 py-2 text-app-text font-semibold focus:outline-none focus:border-app-accent focus:bg-app-panel"
               placeholder="e.g. John, Genesis, Psalms"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-[11px] text-[#5b6270] uppercase font-bold">Chapter</label>
+            <label className="text-[11px] text-app-text-2 uppercase font-bold">Chapter</label>
             <input
               type="number"
               value={bibleChapter}
               onChange={(e) => setBibleChapter(e.target.value)}
-              className="w-full bg-[#f6f7f9] border border-[#d7dbe1] rounded-lg px-3 py-2 text-[#22262c] font-semibold focus:outline-none focus:border-[#2f6fed] focus:bg-white"
+              className="w-full bg-app-toolbar border border-app-border rounded-lg px-3 py-2 text-app-text font-semibold focus:outline-none focus:border-app-accent focus:bg-app-panel"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-[11px] text-[#5b6270] uppercase font-bold">Verse</label>
+            <label className="text-[11px] text-app-text-2 uppercase font-bold">Verse</label>
             <input
               type="number"
               value={bibleVerseStart}
@@ -140,13 +140,13 @@ export default function BibleView({ onProjectBible }: BibleViewProps) {
                 setBibleVerseStart(e.target.value)
                 setBibleVerseEnd(e.target.value)
               }}
-              className="w-full bg-[#f6f7f9] border border-[#d7dbe1] rounded-lg px-3 py-2 text-[#22262c] font-semibold focus:outline-none focus:border-[#2f6fed] focus:bg-white"
+              className="w-full bg-app-toolbar border border-app-border rounded-lg px-3 py-2 text-app-text font-semibold focus:outline-none focus:border-app-accent focus:bg-app-panel"
             />
           </div>
 
           <button
             onClick={handleBibleSearch}
-            className="w-full py-2 bg-[#2f6fed] hover:bg-[#1d5cd4] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider transition duration-150 cursor-pointer shadow-md shadow-[#2f6fed]/20"
+            className="w-full py-2 bg-app-accent hover:opacity-90 text-white font-extrabold rounded-lg text-xs uppercase tracking-wider transition duration-150 cursor-pointer shadow-sm"
           >
             Look Up Scripture
           </button>
@@ -155,12 +155,12 @@ export default function BibleView({ onProjectBible }: BibleViewProps) {
 
       {/* Parallel Results Area */}
       {bibleResults && (
-        <div className="bg-white border border-[#d7dbe1] p-5 rounded-xl shadow-sm flex-1 flex flex-col space-y-4">
-          <div className="flex justify-between items-center border-b border-[#d7dbe1] pb-3">
-            <span className="text-xs font-black text-[#22262c] uppercase tracking-wider">
+        <div className="bg-app-panel border border-app-border p-5 rounded-xl shadow-sm flex-1 flex flex-col space-y-4">
+          <div className="flex justify-between items-center border-b border-app-border pb-3">
+            <span className="text-xs font-black text-app-text uppercase tracking-wider">
               {bibleBook} {bibleChapter}:{bibleVerseStart} Passage Results
             </span>
-            <span className="text-[11px] font-bold text-[#2f6fed] bg-[#e8f0fe] px-2.5 py-0.5 rounded border border-[#c6d9fb]">
+            <span className="text-[11px] font-bold text-app-accent bg-app-accent-bg px-2.5 py-0.5 rounded border border-app-accent/30">
               {selectedTranslations.length} Translations Active
             </span>
           </div>
@@ -169,12 +169,12 @@ export default function BibleView({ onProjectBible }: BibleViewProps) {
             {selectedTranslations.map((tId) => {
               const verseObj = (bibleResults[tId] || []).find((v: any) => v.verse === Number(bibleVerseStart))
               return (
-                <div key={tId} className="bg-[#f6f7f9] border border-[#d7dbe1] p-4 rounded-lg space-y-2">
+                <div key={tId} className="bg-app-toolbar border border-app-border p-4 rounded-lg space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-[#2f6fed] uppercase tracking-wider">{tId} Translation</span>
-                    <span className="text-[10px] text-[#9399a4] font-mono">Verse {bibleVerseStart}</span>
+                    <span className="text-xs font-black text-app-accent uppercase tracking-wider">{tId} Translation</span>
+                    <span className="text-[10px] text-app-text-3 font-mono">Verse {bibleVerseStart}</span>
                   </div>
-                  <p className="text-sm font-medium text-[#22262c] leading-relaxed italic bg-white p-3 rounded border border-[#d7dbe1]">
+                  <p className="text-sm font-medium text-app-text leading-relaxed italic bg-app-panel p-3 rounded border border-app-border">
                     "{verseObj ? verseObj.text : 'Verse not found in this translation database.'}"
                   </p>
                 </div>
@@ -182,10 +182,10 @@ export default function BibleView({ onProjectBible }: BibleViewProps) {
             })}
           </div>
 
-          <div className="pt-2 border-t border-[#d7dbe1]">
+          <div className="pt-2 border-t border-app-border">
             <button
               onClick={projectBiblePassage}
-              className="w-full py-3 bg-[#d8352c] hover:bg-[#ba271f] active:scale-98 text-white font-black rounded-lg text-xs uppercase tracking-wider transition duration-150 cursor-pointer shadow-lg shadow-[#d8352c]/20 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-app-live hover:opacity-90 active:scale-98 text-white font-black rounded-lg text-xs uppercase tracking-wider transition duration-150 cursor-pointer shadow-md flex items-center justify-center gap-2"
             >
               <span>SEND PARALLEL SCRIPTURE TO LIVE STAGE</span>
               <span>▶</span>

@@ -7,7 +7,7 @@ import StagePreviewPanel from '../components/dashboard/StagePreviewPanel'
 import MockupStatusBar from '../components/dashboard/MockupStatusBar'
 
 import BibleView from './tabs/BibleView'
-import ScriptureHymnalTab from './tabs/ScriptureHymnalTab'
+import HymnalView from './tabs/HymnalView'
 import CameraVisualsTab from './tabs/CameraVisualsTab'
 import AudioTab from './tabs/AudioTab'
 import StreamingTab from './tabs/StreamingTab'
@@ -211,7 +211,7 @@ export default function OperatorDashboard() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#eef0f3] text-[#22262c] font-sans overflow-hidden select-none">
+    <div className="flex flex-col h-screen w-screen bg-app-bg text-app-text font-sans overflow-hidden select-none">
       {/* 1. Menu Bar */}
       <MenuBar />
 
@@ -244,11 +244,11 @@ export default function OperatorDashboard() {
 
         {/* Subsystem Overlays */}
         {activeMode !== 'slides' && (
-          <div className="flex-1 bg-white p-0 overflow-hidden border-r border-[#d7dbe1]">
+          <div className="flex-1 bg-app-panel p-0 overflow-hidden border-r border-app-border">
             {activeMode === 'bible' ? (
               <BibleView onProjectBible={handleProjectBible} />
             ) : activeMode === 'hymnal' ? (
-              <ScriptureHymnalTab onProjectBible={handleProjectBible} onProjectHymn={handleProjectHymn} />
+              <HymnalView onProjectHymn={handleProjectHymn} />
             ) : activeMode === 'camera' ? (
               <CameraVisualsTab />
             ) : activeMode === 'audio' ? (

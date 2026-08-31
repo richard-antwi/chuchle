@@ -21,17 +21,17 @@ export default function CameraVisualsTab() {
   }, [])
 
   return (
-    <div className="h-full flex flex-col space-y-4 overflow-y-auto p-4 select-none text-slate-100">
+    <div className="h-full flex flex-col space-y-4 overflow-y-auto p-6 select-none bg-app-bg text-app-text">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
         {/* Left 2 Columns: Controls */}
         <div className="md:col-span-2 space-y-4">
           {/* Camera Selection */}
-          <div className="bg-[#141922] border border-[#232B38] p-4 rounded-lg space-y-3">
-            <h3 className="text-xs font-extrabold text-[#3FA9F5] uppercase tracking-wider">Video Camera Feed</h3>
+          <div className="bg-app-panel border border-app-border p-5 rounded-xl shadow-sm space-y-3">
+            <h3 className="text-xs font-black text-app-accent uppercase tracking-wider">Video Camera Feed</h3>
             <select
               value={activeCameraDeviceId}
               onChange={(e) => setCameraDeviceId(e.target.value)}
-              className="w-full bg-[#0B0E14] border border-[#232B38] rounded px-3 py-2 text-xs text-[#E8EAED] focus:outline-none"
+              className="w-full bg-app-toolbar border border-app-border rounded-lg px-3 py-2 text-xs text-app-text font-semibold focus:outline-none"
             >
               <option value="">No Camera Ingestion (Disabled)</option>
               {cameras.map((c) => (
@@ -43,11 +43,11 @@ export default function CameraVisualsTab() {
           </div>
 
           {/* Color Grading Shaders */}
-          <div className="bg-[#141922] border border-[#232B38] p-4 rounded-lg space-y-4">
-            <h3 className="text-xs font-extrabold text-[#F5A623] uppercase tracking-wider">Color Matrix Grading</h3>
+          <div className="bg-app-panel border border-app-border p-5 rounded-xl shadow-sm space-y-4">
+            <h3 className="text-xs font-black text-app-accent uppercase tracking-wider">Color Matrix Grading</h3>
             <div className="grid grid-cols-3 gap-4 text-xs">
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 uppercase font-semibold">Brightness: {colorGrading.brightness.toFixed(2)}</label>
+                <label className="text-[10px] text-app-text-3 uppercase font-bold">Brightness: {colorGrading.brightness.toFixed(2)}</label>
                 <input
                   type="range"
                   min="0.5"
@@ -55,12 +55,12 @@ export default function CameraVisualsTab() {
                   step="0.05"
                   value={colorGrading.brightness}
                   onChange={(e) => setColorGrading({ brightness: parseFloat(e.target.value) })}
-                  className="w-full accent-[#F5A623] cursor-pointer"
+                  className="w-full accent-app-accent cursor-pointer"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 uppercase font-semibold">Contrast: {colorGrading.contrast.toFixed(2)}</label>
+                <label className="text-[10px] text-app-text-3 uppercase font-bold">Contrast: {colorGrading.contrast.toFixed(2)}</label>
                 <input
                   type="range"
                   min="0.5"
@@ -68,12 +68,12 @@ export default function CameraVisualsTab() {
                   step="0.05"
                   value={colorGrading.contrast}
                   onChange={(e) => setColorGrading({ contrast: parseFloat(e.target.value) })}
-                  className="w-full accent-[#F5A623] cursor-pointer"
+                  className="w-full accent-app-accent cursor-pointer"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 uppercase font-semibold">Saturation: {colorGrading.saturation.toFixed(2)}</label>
+                <label className="text-[10px] text-app-text-3 uppercase font-bold">Saturation: {colorGrading.saturation.toFixed(2)}</label>
                 <input
                   type="range"
                   min="0.0"
@@ -81,41 +81,41 @@ export default function CameraVisualsTab() {
                   step="0.05"
                   value={colorGrading.saturation}
                   onChange={(e) => setColorGrading({ saturation: parseFloat(e.target.value) })}
-                  className="w-full accent-[#F5A623] cursor-pointer"
+                  className="w-full accent-app-accent cursor-pointer"
                 />
               </div>
             </div>
           </div>
 
           {/* GPU Chroma Keying */}
-          <div className="bg-[#141922] border border-[#232B38] p-4 rounded-lg space-y-4">
+          <div className="bg-app-panel border border-app-border p-5 rounded-xl shadow-sm space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-extrabold text-[#3FA9F5] uppercase tracking-wider">GPU Chroma Keyer</h3>
-              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <h3 className="text-xs font-black text-app-accent uppercase tracking-wider">GPU Chroma Keyer</h3>
+              <label className="flex items-center gap-2 text-xs text-app-text-2 cursor-pointer font-bold">
                 <input
                   type="checkbox"
                   checked={chromaKeyConfig.enabled}
                   onChange={(e) => setChromaKey({ enabled: e.target.checked })}
-                  className="rounded border-[#232B38] text-[#3FA9F5] focus:ring-[#3FA9F5] accent-[#3FA9F5]"
+                  className="rounded border-app-border text-app-accent focus:ring-app-accent accent-app-accent"
                 />
                 Enable Keying
               </label>
             </div>
 
             {chromaKeyConfig.enabled && (
-              <div className="grid grid-cols-3 gap-4 text-xs pt-2 border-t border-[#232B38]">
+              <div className="grid grid-cols-3 gap-4 text-xs pt-2 border-t border-app-border">
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 uppercase font-semibold">Key Color</label>
+                  <label className="text-[10px] text-app-text-3 uppercase font-bold">Key Color</label>
                   <input
                     type="color"
                     value={chromaKeyConfig.color}
                     onChange={(e) => setChromaKey({ color: e.target.value })}
-                    className="w-full h-8 bg-[#0B0E14] border border-[#232B38] rounded cursor-pointer p-1"
+                    className="w-full h-8 bg-app-toolbar border border-app-border rounded cursor-pointer p-1"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 uppercase font-semibold">Similarity: {chromaKeyConfig.similarity.toFixed(2)}</label>
+                  <label className="text-[10px] text-app-text-3 uppercase font-bold">Similarity: {chromaKeyConfig.similarity.toFixed(2)}</label>
                   <input
                     type="range"
                     min="0.1"
@@ -123,12 +123,12 @@ export default function CameraVisualsTab() {
                     step="0.02"
                     value={chromaKeyConfig.similarity}
                     onChange={(e) => setChromaKey({ similarity: parseFloat(e.target.value) })}
-                    className="w-full accent-[#3FA9F5] cursor-pointer"
+                    className="w-full accent-app-accent cursor-pointer"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 uppercase font-semibold">Smoothness: {chromaKeyConfig.smoothness.toFixed(2)}</label>
+                  <label className="text-[10px] text-app-text-3 uppercase font-bold">Smoothness: {chromaKeyConfig.smoothness.toFixed(2)}</label>
                   <input
                     type="range"
                     min="0.0"
@@ -136,7 +136,7 @@ export default function CameraVisualsTab() {
                     step="0.02"
                     value={chromaKeyConfig.smoothness}
                     onChange={(e) => setChromaKey({ smoothness: parseFloat(e.target.value) })}
-                    className="w-full accent-[#3FA9F5] cursor-pointer"
+                    className="w-full accent-app-accent cursor-pointer"
                   />
                 </div>
               </div>
@@ -145,15 +145,15 @@ export default function CameraVisualsTab() {
         </div>
 
         {/* Right Column: Live Composite Thumbnail Preview */}
-        <div className="bg-[#141922] border border-[#232B38] p-4 rounded-lg flex flex-col space-y-3">
-          <h3 className="text-xs font-extrabold text-[#F5A623] uppercase tracking-wider flex items-center justify-between">
+        <div className="bg-app-panel border border-app-border p-5 rounded-xl shadow-sm flex flex-col space-y-3">
+          <h3 className="text-xs font-black text-app-accent uppercase tracking-wider flex items-center justify-between">
             <span>Composited Output Preview</span>
-            <span className="h-2 w-2 rounded-full bg-[#F5A623] animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-app-accent animate-pulse" />
           </h3>
-          <div className="flex-1 bg-black rounded-lg border border-[#232B38] overflow-hidden min-h-[260px] relative flex items-center justify-center">
+          <div className="flex-1 bg-black rounded-lg border border-app-border overflow-hidden min-h-[260px] relative flex items-center justify-center">
             <PixiStage />
           </div>
-          <div className="text-[10px] text-slate-500 italic text-center">
+          <div className="text-[10px] text-app-text-3 italic text-center">
             Real-time WebGL composite preview displaying shaders and keying.
           </div>
         </div>

@@ -41,75 +41,75 @@ export default function StreamingTab() {
   }
 
   return (
-    <div className="h-full flex flex-col space-y-4 overflow-y-auto p-4 select-none text-slate-100">
+    <div className="h-full flex flex-col space-y-4 overflow-y-auto p-6 select-none bg-app-bg text-app-text">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
         {/* Left Column: OBS WebSocket Connection */}
-        <div className="bg-[#141922] border border-[#232B38] p-5 rounded-lg space-y-4 flex flex-col justify-between">
+        <div className="bg-app-panel border border-app-border p-5 rounded-xl shadow-sm space-y-4 flex flex-col justify-between">
           <div className="space-y-4">
-            <h3 className="text-xs font-extrabold text-[#3FA9F5] uppercase tracking-wider flex items-center justify-between">
+            <h3 className="text-xs font-black text-app-accent uppercase tracking-wider flex items-center justify-between">
               <span>OBS Studio WebSocket v5 Automation</span>
-              <span className={`h-2 w-2 rounded-full ${obsConnected ? 'bg-[#3FA9F5]' : 'bg-rose-500'}`} />
+              <span className={`h-2.5 w-2.5 rounded-full ${obsConnected ? 'bg-app-accent' : 'bg-app-live'}`} />
             </h3>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 uppercase">Port</label>
+                <label className="text-[10px] text-app-text-3 uppercase font-bold">Port</label>
                 <input
                   type="number"
                   value={obsPort}
                   onChange={(e) => setObsPort(e.target.value)}
-                  className="w-full bg-[#0B0E14] border border-[#232B38] rounded px-2.5 py-1.5 text-[#E8EAED] focus:outline-none"
+                  className="w-full bg-app-toolbar border border-app-border rounded-lg px-3 py-1.5 text-app-text font-semibold focus:outline-none"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-slate-400 uppercase">Password</label>
+                <label className="text-[10px] text-app-text-3 uppercase font-bold">Password</label>
                 <input
                   type="password"
                   value={obsPassword}
                   onChange={(e) => setObsPassword(e.target.value)}
-                  className="w-full bg-[#0B0E14] border border-[#232B38] rounded px-2.5 py-1.5 text-[#E8EAED] focus:outline-none"
+                  className="w-full bg-app-toolbar border border-app-border rounded-lg px-3 py-1.5 text-app-text font-semibold focus:outline-none"
                 />
               </div>
             </div>
 
             <button
               onClick={handleConnectObs}
-              className="w-full py-2 bg-[#3FA9F5] hover:bg-[#2e93db] text-slate-950 font-extrabold rounded text-xs uppercase tracking-wider transition cursor-pointer"
+              className="w-full py-2.5 bg-app-accent hover:opacity-90 text-white font-extrabold rounded-lg text-xs uppercase tracking-wider transition cursor-pointer shadow-sm"
             >
               {obsConnected ? 'Reconnect OBS' : 'Connect OBS WebSocket'}
             </button>
 
-            <div className="text-[11px] font-mono text-slate-400 italic bg-[#0B0E14] p-2.5 rounded border border-[#232B38]">
+            <div className="text-[11px] font-mono text-app-text-2 italic bg-app-toolbar p-2.5 rounded border border-app-border">
               {obsStatusMsg}
             </div>
           </div>
 
           {/* Lower Third Link */}
-          <div className="bg-[#0B0E14] border border-[#232B38] p-4 rounded-lg space-y-2">
-            <span className="text-[10px] font-extrabold text-[#F5A623] uppercase">Lower-Third Browser Source</span>
-            <p className="text-xs text-slate-300">Add this URL as a Browser Source in OBS or vMix for transparent lower-thirds:</p>
-            <div className="font-mono text-[11px] text-[#3FA9F5] bg-[#141922] p-2 rounded border border-[#232B38] select-all">
+          <div className="bg-app-toolbar border border-app-border p-4 rounded-lg space-y-2">
+            <span className="text-[10px] font-extrabold text-app-accent uppercase">Lower-Third Browser Source</span>
+            <p className="text-xs text-app-text-2">Add this URL as a Browser Source in OBS or vMix for transparent lower-thirds:</p>
+            <div className="font-mono text-[11px] text-app-accent bg-app-panel p-2 rounded border border-app-border select-all">
               http://localhost:5173/#/lowerthird
             </div>
           </div>
         </div>
 
         {/* Right Column: Category Scene Mapping */}
-        <div className="bg-[#141922] border border-[#232B38] p-5 rounded-lg space-y-4 flex flex-col">
-          <h3 className="text-xs font-extrabold text-[#F5A623] uppercase tracking-wider">Slide Category Scene Mapping</h3>
-          <p className="text-xs text-slate-400">
+        <div className="bg-app-panel border border-app-border p-5 rounded-xl shadow-sm space-y-4 flex flex-col">
+          <h3 className="text-xs font-black text-app-accent uppercase tracking-wider">Slide Category Scene Mapping</h3>
+          <p className="text-xs text-app-text-2">
             Map slide section categories to program scenes in OBS. When projected, Churchle automatically commands OBS to switch scenes.
           </p>
 
           <div className="space-y-3 flex-1 overflow-y-auto pr-1">
             {Object.keys(obsMappings).map((cat) => (
-              <div key={cat} className="flex justify-between items-center bg-[#0B0E14] border border-[#232B38] p-3 rounded-lg text-xs">
-                <span className="font-extrabold text-[#F5A623] tracking-wider">{cat}</span>
+              <div key={cat} className="flex justify-between items-center bg-app-toolbar border border-app-border p-3 rounded-lg text-xs">
+                <span className="font-extrabold text-app-accent tracking-wider">{cat}</span>
                 <select
                   value={obsMappings[cat]}
                   onChange={(e) => handleMappingChange(cat, e.target.value)}
                   disabled={!obsConnected}
-                  className="bg-[#141922] border border-[#232B38] rounded px-3 py-1.5 text-[#E8EAED] focus:outline-none w-48 text-xs"
+                  className="bg-app-panel border border-app-border rounded-lg px-3 py-1.5 text-app-text font-semibold focus:outline-none w-48 text-xs"
                 >
                   <option value="">No Automatic Switch</option>
                   {obsScenes.map((sc) => (

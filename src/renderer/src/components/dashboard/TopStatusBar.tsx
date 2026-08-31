@@ -27,66 +27,66 @@ export default function TopStatusBar({
   }, [])
 
   return (
-    <header className="h-12 bg-[#0B0E14] border-b border-[#232B38] px-5 flex items-center justify-between select-none text-xs">
+    <header className="h-12 bg-app-toolbar border-b border-app-border px-5 flex items-center justify-between select-none text-xs">
       {/* Left Title & Live Badge */}
       <div className="flex items-center gap-3">
-        <span className="font-extrabold tracking-widest text-[#E8EAED] text-sm">CHURCHLE</span>
-        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#141922] border border-[#232B38]">
-          <span className={`h-2 w-2 rounded-full ${isLive ? 'bg-[#F5A623] animate-pulse' : 'bg-slate-600'}`} />
-          <span className={`font-mono font-extrabold text-[10px] tracking-wider uppercase ${isLive ? 'text-[#F5A623]' : 'text-slate-500'}`}>
+        <span className="font-extrabold tracking-widest text-app-text text-sm">CHURCHLE</span>
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-app-panel border border-app-border">
+          <span className={`h-2 w-2 rounded-full ${isLive ? 'bg-app-live animate-pulse' : 'bg-app-text-3'}`} />
+          <span className={`font-mono font-extrabold text-[10px] tracking-wider uppercase ${isLive ? 'text-app-live' : 'text-app-text-3'}`}>
             {isLive ? 'LIVE' : 'OFF-AIR'}
           </span>
         </div>
       </div>
 
       {/* Center Subsystem Status Pills */}
-      <div className="flex items-center gap-4 text-[#E8EAED]">
+      <div className="flex items-center gap-4 text-app-text">
         {/* Displays */}
         <div className="flex items-center gap-1.5 font-mono text-[11px]">
-          <span className="text-slate-500 font-sans text-[10px]">Disp:</span>
-          <span className="text-[#3FA9F5] font-bold">{displayCount}/3 ok</span>
+          <span className="text-app-text-3 font-sans text-[10px]">Disp:</span>
+          <span className="text-app-accent font-bold">{displayCount}/3 ok</span>
         </div>
 
-        <span className="text-[#232B38]">|</span>
+        <span className="text-app-border">|</span>
 
         {/* VLC Player */}
         <div className="flex items-center gap-1.5 font-mono text-[11px]">
-          <span className="text-slate-500 font-sans text-[10px]">VLC:</span>
-          <span className="text-slate-300 font-medium capitalize">{vlcStatus}</span>
+          <span className="text-app-text-3 font-sans text-[10px]">VLC:</span>
+          <span className="text-app-text-2 font-medium capitalize">{vlcStatus}</span>
         </div>
 
-        <span className="text-[#232B38]">|</span>
+        <span className="text-app-border">|</span>
 
         {/* OBS Automation */}
         <div className="flex items-center gap-1.5 font-mono text-[11px]">
-          <span className="text-slate-500 font-sans text-[10px]">OBS:</span>
-          <span className={obsConnected ? 'text-[#3FA9F5] font-bold' : 'text-rose-500 font-bold'}>
+          <span className="text-app-text-3 font-sans text-[10px]">OBS:</span>
+          <span className={obsConnected ? 'text-app-accent font-bold' : 'text-app-live font-bold'}>
             {obsConnected ? '● Connected' : '○ Disconnected'}
           </span>
         </div>
 
-        <span className="text-[#232B38]">|</span>
+        <span className="text-app-border">|</span>
 
         {/* Web Remote */}
         <div className="flex items-center gap-1.5 font-mono text-[11px]">
-          <span className="text-slate-500 font-sans text-[10px]">Remote:</span>
-          <span className="text-slate-300 truncate max-w-[140px]">{remoteUrl || 'Connecting...'}</span>
+          <span className="text-app-text-3 font-sans text-[10px]">Remote:</span>
+          <span className="text-app-text-2 truncate max-w-[140px]">{remoteUrl || 'Connecting...'}</span>
         </div>
 
         {/* AI Transcriber */}
         {isTranscribing && (
           <>
-            <span className="text-[#232B38]">|</span>
+            <span className="text-app-border">|</span>
             <div className="flex items-center gap-1 text-[11px]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#F5A623] animate-ping" />
-              <span className="text-[#F5A623] font-bold">AI Transcribing</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-app-accent animate-ping" />
+              <span className="text-app-accent font-bold">AI Transcribing</span>
             </div>
           </>
         )}
       </div>
 
       {/* Right Live Clock */}
-      <div className="font-mono text-sm font-bold text-[#E8EAED] tracking-wider">
+      <div className="font-mono text-sm font-bold text-app-text tracking-wider">
         {timeStr}
       </div>
     </header>

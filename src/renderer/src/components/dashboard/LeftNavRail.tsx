@@ -27,7 +27,7 @@ export default function LeftNavRail({ activeTab, onTabChange }: LeftNavRailProps
 
   return (
     <aside
-      className={`bg-[#0B0E14] border-r border-[#232B38] flex flex-col justify-between transition-all duration-200 select-none ${
+      className={`bg-app-toolbar border-r border-app-border flex flex-col justify-between transition-all duration-200 select-none ${
         collapsed ? 'w-16' : 'w-52'
       }`}
     >
@@ -42,8 +42,8 @@ export default function LeftNavRail({ activeTab, onTabChange }: LeftNavRailProps
               title={collapsed ? tab.label : undefined}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition duration-150 cursor-pointer ${
                 isActive
-                  ? 'bg-[#141922] text-[#F5A623] border border-[#F5A623]/40 shadow-sm'
-                  : 'text-slate-400 hover:text-[#E8EAED] hover:bg-[#141922]/60 border border-transparent'
+                  ? 'bg-app-accent-bg text-app-accent border border-app-accent/30 shadow-sm font-extrabold'
+                  : 'text-app-text-2 hover:text-app-text hover:bg-app-panel border border-transparent'
               }`}
             >
               <span className="text-base leading-none">{tab.icon}</span>
@@ -54,10 +54,10 @@ export default function LeftNavRail({ activeTab, onTabChange }: LeftNavRailProps
       </nav>
 
       {/* Collapse / Expand Toggle Button */}
-      <div className="p-2 border-t border-[#232B38]">
+      <div className="p-2 border-t border-app-border">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center p-2 text-slate-500 hover:text-slate-300 rounded-lg hover:bg-[#141922] transition duration-150 cursor-pointer text-xs"
+          className="w-full flex items-center justify-center p-2 text-app-text-3 hover:text-app-text rounded-lg hover:bg-app-panel transition duration-150 cursor-pointer text-xs"
         >
           {collapsed ? '➔' : '← Collapse'}
         </button>

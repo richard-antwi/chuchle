@@ -244,12 +244,12 @@ export default function PixiStage() {
         const colStyle = new TextStyle({
           fontFamily: theme.fontFamily || 'Arial',
           fontSize: Math.max(16, (theme.fontSize || 48) - colCount * 6),
-          fill: theme.textColor || '#ffffff',
+          fill: theme.textColor || 'white',
           align: 'center',
           wordWrap: true,
           wordWrapWidth: colWidth,
           dropShadow: {
-            color: '#000000',
+            color: 'black',
             alpha: 0.8,
             blur: 8,
             distance: 4,
@@ -271,12 +271,12 @@ export default function PixiStage() {
       const style = new TextStyle({
         fontFamily: theme.fontFamily || 'Arial',
         fontSize: theme.fontSize || 48,
-        fill: theme.textColor || '#ffffff',
+        fill: theme.textColor || 'white',
         align: 'center',
         wordWrap: true,
         wordWrapWidth: width * 0.8,
         dropShadow: {
-          color: '#000000',
+          color: 'black',
           alpha: 0.8,
           blur: 8,
           distance: 4,

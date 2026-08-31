@@ -132,6 +132,49 @@ export default function DashboardToolbar({
       </button>
 
       <button
+        onClick={() => onModeChange('custom')}
+        className={`tbtn ${activeMode === 'custom' ? 'active' : ''}`}
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+        Custom
+      </button>
+
+      <button
+        onClick={() => onModeChange('decks')}
+        className={`tbtn ${activeMode === 'decks' ? 'active' : ''}`}
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M2 3h20v14H2z" />
+          <path d="M8 21h8M12 17v4" />
+        </svg>
+        Decks
+      </button>
+
+      <button
+        onClick={() => onModeChange('parallel')}
+        className={`tbtn ${activeMode === 'parallel' ? 'active' : ''}`}
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+        </svg>
+        Parallel
+      </button>
+
+      <button
+        onClick={() => onModeChange('chords')}
+        className={`tbtn ${activeMode === 'chords' ? 'active' : ''}`}
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="M9 18V5l10-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="16" cy="16" r="3" />
+        </svg>
+        Chords
+      </button>
+
+      <button
         onClick={() => onModeChange('settings')}
         className={`tbtn ${activeMode === 'settings' ? 'active' : ''}`}
       >

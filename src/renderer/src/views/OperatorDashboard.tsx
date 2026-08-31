@@ -16,6 +16,10 @@ import StreamingTab from './tabs/StreamingTab'
 import RemoteAiTab from './tabs/RemoteAiTab'
 import ThemeManagerView from './tabs/ThemeManagerView'
 import SettingsView from './tabs/SettingsView'
+import CustomSlidesTab from './tabs/CustomSlidesTab'
+import PresentationsTab from './tabs/PresentationsTab'
+import ParallelScriptureView from './tabs/ParallelScriptureView'
+import MusicianStageTab from './tabs/MusicianStageTab'
 
 import { useDisplayStore } from '../stores/useDisplayStore'
 import { ObsControllerService } from '../services/ObsControllerService'
@@ -402,6 +406,29 @@ export default function OperatorDashboard() {
               <ThemeManagerView />
             ) : activeMode === 'settings' ? (
               <SettingsView />
+            ) : activeMode === 'custom' ? (
+              <CustomSlidesTab
+                onAddToService={handleAddToServiceQueue}
+                onSendLiveDirect={(item) => {
+                  handleAddToServiceQueue(item)
+                  handleCommitPreviewToLive()
+                }}
+              />
+            ) : activeMode === 'decks' ? (
+              <PresentationsTab
+                onAddToService={handleAddToServiceQueue}
+                onSendLiveDirect={(item) => {
+                  handleAddToServiceQueue(item)
+                  handleCommitPreviewToLive()
+                }}
+              />
+            ) : activeMode === 'parallel' ? (
+              <ParallelScriptureView
+                onProjectBible={handleProjectBible}
+                onAddToService={handleAddToServiceQueue}
+              />
+            ) : activeMode === 'chords' ? (
+              <MusicianStageTab />
             ) : null}
           </div>
         )}

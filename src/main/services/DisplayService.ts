@@ -26,7 +26,8 @@ export class DisplayService {
       'audience',
       audienceDisplay,
       preloadPath,
-      !displays[1] || isDev
+      !displays[1] || isDev,
+      1
     )
 
     // 2. Create Stage Window
@@ -35,7 +36,8 @@ export class DisplayService {
       'stage',
       stageDisplay,
       preloadPath,
-      !displays[2] || isDev
+      !displays[2] || isDev,
+      2
     )
 
     // 3. Create Foyer Window
@@ -44,7 +46,8 @@ export class DisplayService {
       'foyer',
       foyerDisplay,
       preloadPath,
-      !displays[3] || isDev
+      !displays[3] || isDev,
+      3
     )
   }
 
@@ -52,16 +55,18 @@ export class DisplayService {
     route: string,
     display: Electron.Display,
     preloadPath: string,
-    windowed: boolean
+    windowed: boolean,
+    offsetIndex: number = 1
   ): BrowserWindow {
     const { x, y, width, height } = display.bounds
+    const offset = offsetIndex * 45
 
     const win = new BrowserWindow({
       title: `${route.toUpperCase()} OUTPUT`,
       width: windowed ? 800 : width,
       height: windowed ? 600 : height,
-      x: windowed ? x + 50 : x,
-      y: windowed ? y + 50 : y,
+      x: windowed ? x + offset : x,
+      y: windowed ? y + offset : y,
       frame: windowed,
       fullscreen: !windowed,
       show: false,
@@ -86,35 +91,50 @@ export class DisplayService {
     return win
   }
 
+  public static focusWindow(name: 'audience' | 'stage' | 'foyer'): void {
+    let targetWin: BrowserWindow | null = null
+    if (name === 'audience') targetWin = this.audienceWindow
+    if (name === 'stage') targetWin = this.stageWindow
+    if (name === 'foyer') targetWin = this.foyerWindow
+
+    if (targetWin && !targetWin.isDestroyed()) {
+      if (targetWin.isMinimized()) targetWin.restore()
+      targetWin.show()
+      targetWin.focus()
+    }
+  }
+
   public static repositionWindows(): void {
     const displays = screen.getAllDisplays()
     const isDev = is.dev
 
     if (this.audienceWindow && !this.audienceWindow.isDestroyed()) {
       const display = displays[1] || displays[0]
-      this.updateWindowPosition(this.audienceWindow, display, !displays[1] || isDev)
+      this.updateWindowPosition(this.audienceWindow, display, !displays[1] || isDev, 1)
     }
 
     if (this.stageWindow && !this.stageWindow.isDestroyed()) {
       const display = displays[2] || displays[0]
-      this.updateWindowPosition(this.stageWindow, display, !displays[2] || isDev)
+      this.updateWindowPosition(this.stageWindow, display, !displays[2] || isDev, 2)
     }
 
     if (this.foyerWindow && !this.foyerWindow.isDestroyed()) {
       const display = displays[3] || displays[0]
-      this.updateWindowPosition(this.foyerWindow, display, !displays[3] || isDev)
+      this.updateWindowPosition(this.foyerWindow, display, !displays[3] || isDev, 3)
     }
   }
 
   private static updateWindowPosition(
     win: BrowserWindow,
     display: Electron.Display,
-    windowed: boolean
+    windowed: boolean,
+    offsetIndex: number = 1
   ): void {
     const { x, y, width, height } = display.bounds
+    const offset = offsetIndex * 45
     win.setFullScreen(!windowed)
     if (windowed) {
-      win.setBounds({ x: x + 50, y: y + 50, width: 800, height: 600 })
+      win.setBounds({ x: x + offset, y: y + offset, width: 800, height: 600 })
     } else {
       win.setBounds({ x, y, width, height })
     }

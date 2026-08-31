@@ -99,6 +99,12 @@ app.whenReady().then(() => {
     return remoteService ? remoteService.getLocalUrl() : ''
   })
 
+  // Focus output window handler
+  ipcMain.handle('focus-window', (_event, windowName: 'audience' | 'stage' | 'foyer') => {
+    DisplayService.focusWindow(windowName)
+    return true
+  })
+
   // Database search handlers
   ipcMain.handle('search-songs', (_event, query: string) => {
     const db = getDb()

@@ -9,18 +9,18 @@ module.exports = {
     extend: {
       colors: {
         app: {
-          bg: '#eef0f3',
-          panel: '#ffffff',
-          border: '#d7dbe1',
-          'border-strong': '#b9c0ca',
-          text: '#22262c',
-          'text-2': '#5b6270',
-          'text-3': '#9399a4',
-          accent: '#2f6fed',
-          'accent-bg': '#e8f0fe',
-          toolbar: '#f6f7f9',
+          bg: '#1e1e1e',
+          panel: '#2d2d2d',
+          border: '#3e3e42',
+          'border-strong': '#505054',
+          text: '#ffffff',
+          'text-2': '#bbbbbb',
+          'text-3': '#888888',
+          accent: '#2b73d2',
+          'accent-bg': '#1b4985',
+          toolbar: '#252526',
           live: '#d8352c',
-          'live-bg': '#fdeceb',
+          'live-bg': '#3f1917',
         }
       }
     },

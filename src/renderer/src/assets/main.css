@@ -11,7 +11,8 @@ html, body, #root {
   padding: 0;
   overflow: hidden;
   user-select: none;
-  background-color: #eef0f3;
+  background-color: #1e1e1e;
+  color: #ffffff;
 }
 
 @keyframes marquee {
@@ -26,21 +27,21 @@ html, body, #root {
 }
 
 /* ==========================================================================
-   APPROVED REFERENCE DESIGN (churchle_dashboard_mockup.html) CSS STYLES
+   OPENLP EXACT REFERENCE DESIGN (DARK MODE) CSS STYLES
    ========================================================================== */
 :root {
-  --bg: #eef0f3;
-  --panel: #ffffff;
-  --border: #d7dbe1;
-  --border-strong: #b9c0ca;
-  --text: #22262c;
-  --text-2: #5b6270;
-  --text-3: #9399a4;
-  --accent: #2f6fed;
-  --accent-bg: #e8f0fe;
-  --toolbar: #f6f7f9;
+  --bg: #1e1e1e;
+  --panel: #2d2d2d;
+  --border: #3e3e42;
+  --border-strong: #505054;
+  --text: #ffffff;
+  --text-2: #bbbbbb;
+  --text-3: #888888;
+  --accent: #2b73d2;
+  --accent-bg: #1b4985;
+  --toolbar: #252526;
   --live: #d8352c;
-  --live-bg: #fdeceb;
+  --live-bg: #3f1917;
   --font: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -78,13 +79,13 @@ html, body, #root {
   cursor: pointer;
 }
 .tbtn svg { width: 18px; height: 18px; stroke: var(--text-2); fill: none; stroke-width: 1.6; }
-.tbtn:hover { background: #eceff3; }
+.tbtn:hover { background: #333333; }
 .tbtn.active {
   background: var(--accent-bg);
-  border-color: #c6d9fb;
-  color: var(--accent);
+  border-color: #2b73d2;
+  color: #ffffff;
 }
-.tbtn.active svg { stroke: var(--accent); }
+.tbtn.active svg { stroke: #ffffff; }
 .tdiv { width: 1px; height: 32px; background: var(--border); margin: 0 8px; }
 
 .toolbar-spacer { flex: 1; }

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import MenuBar from '../components/dashboard/MenuBar'
 import DashboardToolbar from '../components/dashboard/DashboardToolbar'
-import LibraryPanel, { SongItem } from '../components/dashboard/LibraryPanel'
-import OrderOfServicePanel, { ServiceQueueItem } from '../components/dashboard/OrderOfServicePanel'
-import PreviewStagePanel from '../components/dashboard/PreviewStagePanel'
-import LiveStagePanel from '../components/dashboard/LiveStagePanel'
+import LibraryAccordionPanel from '../components/dashboard/LibraryAccordionPanel'
+import OpenLpCenterPanel from '../components/dashboard/OpenLpCenterPanel'
+import ServiceAndThemesPanel from '../components/dashboard/ServiceAndThemesPanel'
 import MockupStatusBar from '../components/dashboard/MockupStatusBar'
+import { SongItem } from '../components/dashboard/LibraryPanel'
+import { ServiceQueueItem } from '../components/dashboard/OrderOfServicePanel'
 
 import BibleView from './tabs/BibleView'
 import HymnalView from './tabs/HymnalView'
@@ -22,21 +23,41 @@ import { ObsControllerService } from '../services/ObsControllerService'
 export default function OperatorDashboard() {
   const [activeMode, setActiveMode] = useState<string>('slides')
 
+  // Sample Songs Library
+  const [songLibrary] = useState<SongItem[]>([
+    { id: 'song_my_hope', title: '"My Hope Is Built on Nothing Less"', author: 'Anonymous' },
+    { id: 'song_with_everything', title: '"With Everything"', author: 'Hillsong United' },
+    { id: 'song_apostles_creed', title: 'Apostles Creed ( )', author: '' },
+    { id: 'song_cantic1', title: 'CANTICLE 1 ( )', author: '' },
+    { id: 'song_cantic2', title: 'CANTICLE 2 ( )', author: '' },
+    { id: 'song_great_is_thy', title: 'great is thy faithfulness', author: 'Anonymous' },
+    { id: 'song_mhb1', title: 'MHB1 (Charles Wesley)', author: 'Charles Wesley' },
+    { id: 'song_mhb2', title: 'MHB2 (William Kethe, d)', author: 'William Kethe' },
+    { id: 'song_mhb3', title: 'MHB3 (Isaac Watts, alt. by John Wesley)', author: 'Isaac Watts' },
+    { id: 'song_mhb4', title: 'MHB4 (Isaac Watts, 1674-1748)', author: 'Isaac Watts' }
+  ])
+
+  const [selectedSongId, setSelectedSongId] = useState<string>('song_apostles_creed')
+
   // Service Queue State
   const [serviceQueue, setServiceQueue] = useState<ServiceQueueItem[]>([
     {
-      id: 'svc_psalm_100',
-      title: 'Call to worship — Psalm 100',
-      sub: 'Scripture reading',
-      type: 'scripture',
-      slides: ['Make a joyful noise unto the LORD,\nall ye lands.\nServe the LORD with gladness.']
+      id: 'svc_apostles_creed',
+      title: 'Apostles Creed',
+      sub: 'Creed Confession',
+      type: 'song',
+      slides: [
+        'I Believe in God the Father Almighty,\nMaker of heaven and earth:\nAnd in Jesus Christ his only son rendering,\nBorn of the Virgin Mary,',
+        'Suffered under Pontius Pilate, Was Crucified, dead, and buried,\nHe descended into hell; The third day He rose again from the dead.\nHe ascended into heaven',
+        'And sitteth on the right hand of God the Father Almighty;\nFrom thence He shall come to judge the quick and the dead.\nI believe in the Holy Ghost; The holy Catholic church;',
+        'The communion of Saints; The Forgiveness of sins;\nThe Resurrection of the body, And the life everlasting. Amen'
+      ]
     },
     {
       id: 'svc_amazing_grace',
       title: 'Amazing Grace',
       sub: 'Verse 2 of 4 — on air',
       type: 'song',
-      isCurrent: true,
       slides: [
         'Amazing grace how sweet the sound\nThat saved a wretch like me',
         'Twas grace that taught\nmy heart to fear',
@@ -50,44 +71,21 @@ export default function OperatorDashboard() {
       sub: '4 verses, 1 chorus',
       type: 'song',
       slides: ['O Lord my God,\nWhen I in awesome wonder', 'Then sings my soul,\nMy Saviour God, to Thee']
-    },
-    {
-      id: 'svc_announcements',
-      title: 'Announcements',
-      sub: 'PDF import — 3 slides',
-      type: 'pdf',
-      slides: ['Welcome to Churchle Sanctuary', 'Youth Camp Registration Open']
-    },
-    {
-      id: 'svc_john_316',
-      title: 'Sermon text — John 3:16',
-      sub: 'Parallel KJV / NIV',
-      type: 'scripture',
-      slides: ['For God so loved the world | For God so loved the world']
     }
   ])
 
   // 2-STAGE COMMIT STATES
-  // Stage 1: Preview Staging
-  const [stagedItemId, setStagedItemId] = useState<string>('svc_how_great')
+  const [stagedItemId, setStagedItemId] = useState<string>('svc_apostles_creed')
   const [stagedSlideIndex, setStagedSlideIndex] = useState<number>(0)
 
-  // Stage 2: Live On-Air Output
-  const [liveItemId, setLiveItemId] = useState<string>('svc_amazing_grace')
+  const [liveItemId, setLiveItemId] = useState<string>('svc_apostles_creed')
   const [liveSlideIndex, setLiveSlideIndex] = useState<number>(0)
 
   const [isBlanked, setIsBlanked] = useState<boolean>(false)
   const [isCleared, setIsCleared] = useState<boolean>(false)
 
-  const [selectedSongId, setSelectedSongId] = useState<string>('song_amazing_grace')
   const [obsConnected, setObsConnected] = useState(false)
   const [remoteUrl, setRemoteUrl] = useState('')
-
-  // AI Transcriber state
-  const [isTranscribing, setIsTranscribing] = useState(false)
-  const [transcriberStatus] = useState('idle')
-  const [transcriberMsg] = useState('')
-  const [transcriptLog] = useState<string[]>([])
 
   // Zustand Display Store Hooks
   const updateStoreLyrics = useDisplayStore((state) => state.setLyrics)
@@ -97,11 +95,9 @@ export default function OperatorDashboard() {
   // Derived Items
   const stagedItem = serviceQueue.find((i) => i.id === stagedItemId) || serviceQueue[0]
   const stagedSlides = stagedItem ? stagedItem.slides || [] : []
-  const stagedSlideText = stagedSlides[stagedSlideIndex] || ''
 
-  const liveItem = serviceQueue.find((i) => i.id === liveItemId) || serviceQueue[1]
+  const liveItem = serviceQueue.find((i) => i.id === liveItemId) || serviceQueue[0]
   const liveSlides = liveItem ? liveItem.slides || [] : []
-  const liveSlideText = liveSlides[liveSlideIndex] || ''
 
   useEffect(() => {
     if (window.electron && window.electron.ipcRenderer) {
@@ -142,11 +138,12 @@ export default function OperatorDashboard() {
       }))
     )
 
+    const liveText = stagedSlides[stagedSlideIndex] || ''
     const nextText = stagedSlides[stagedSlideIndex + 1] || 'End of item'
-    broadcastLiveState(stagedItem.title, stagedSlideText, nextText)
-  }, [stagedItemId, stagedSlideIndex, stagedItem, stagedSlides, stagedSlideText, broadcastLiveState])
+    broadcastLiveState(stagedItem.title, liveText, nextText)
+  }, [stagedItemId, stagedSlideIndex, stagedItem, stagedSlides, broadcastLiveState])
 
-  // Direct Live Jump (within current live item)
+  // Direct Live Jump
   const handleSelectLiveSlideDirect = (idx: number) => {
     setLiveSlideIndex(idx)
     setIsBlanked(false)
@@ -155,7 +152,7 @@ export default function OperatorDashboard() {
     broadcastLiveState(liveItem.title, text, nextText)
   }
 
-  // Stage 1: Single Click in Service Queue -> Load into Preview
+  // Queue Item Stage Action
   const handleStageServiceItem = (item: ServiceQueueItem) => {
     setStagedItemId(item.id)
     setStagedSlideIndex(0)
@@ -167,8 +164,16 @@ export default function OperatorDashboard() {
     setStagedSlideIndex(0)
   }
 
-  // Double Click in Library -> Add to Service Queue & Stage in Preview
   const handleSelectSongFromLibrary = (song: SongItem) => {
+    setSelectedSongId(song.id)
+    const existing = serviceQueue.find((i) => i.title.toLowerCase().includes(song.title.toLowerCase()))
+    if (existing) {
+      setStagedItemId(existing.id)
+      setStagedSlideIndex(0)
+    }
+  }
+
+  const handleSendSongDirectToLive = (song: SongItem) => {
     setSelectedSongId(song.id)
     const newQueueItem: ServiceQueueItem = {
       id: `svc_${song.id}_${Date.now()}`,
@@ -181,7 +186,12 @@ export default function OperatorDashboard() {
         'Was blind but now I see'
       ]
     }
-    handleAddToServiceQueue(newQueueItem)
+    setServiceQueue((prev) => [...prev, newQueueItem])
+    setStagedItemId(newQueueItem.id)
+    setStagedSlideIndex(0)
+    setLiveItemId(newQueueItem.id)
+    setLiveSlideIndex(0)
+    broadcastLiveState(newQueueItem.title, newQueueItem.slides![0], newQueueItem.slides![1])
   }
 
   // Disk Service File Save / Open Handlers
@@ -277,58 +287,65 @@ export default function OperatorDashboard() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-app-bg text-app-text font-sans overflow-hidden select-none">
+    <div className="flex flex-col h-screen w-screen bg-[#1e1e1e] text-white font-sans overflow-hidden select-none">
       {/* 1. Menu Bar */}
       <MenuBar />
 
-      {/* 2. Toolbar */}
+      {/* 2. Mode Switcher Toolbar */}
       <DashboardToolbar activeMode={activeMode} onModeChange={setActiveMode} isLive={liveSlides.length > 0} />
 
-      {/* 3. Main OpenLP 4-Panel Body */}
-      <div className="mockup-main flex-1 flex min-h-0">
-        {/* Panel 1: Song Library */}
-        <LibraryPanel selectedSongId={selectedSongId} onSelectSong={handleSelectSongFromLibrary} />
-
-        {/* Panel 2 & 3 & 4 (OpenLP Staging Model) */}
+      {/* 3. Main OpenLP 3-Column Body (Matching Picture 1) */}
+      <div className="mockup-main flex-1 flex min-h-0 bg-[#1e1e1e]">
         {activeMode === 'slides' && (
           <>
-            {/* Panel 2: Service Queue */}
-            <OrderOfServicePanel
+            {/* Column 1: Library Accordion (Left ~260px) */}
+            <LibraryAccordionPanel
+              songs={songLibrary}
+              selectedSongId={selectedSongId}
+              onSelectSong={handleSelectSongFromLibrary}
+              onAddToService={(s) =>
+                handleAddToServiceQueue({
+                  id: `svc_${s.id}_${Date.now()}`,
+                  title: s.title,
+                  sub: s.author || 'Song library',
+                  type: 'song',
+                  slides: [`${s.title}\nVerse 1`, 'Amazing grace how sweet the sound']
+                })
+              }
+              onSendLiveDirect={handleSendSongDirectToLive}
+            />
+
+            {/* Column 2: Dual Preview & Live Panels (Center Flex-1) */}
+            <OpenLpCenterPanel
+              stagedTitle={stagedItem.title}
+              stagedSlides={stagedSlides}
+              stagedSlideIndex={stagedSlideIndex}
+              onSelectStagedSlide={setStagedSlideIndex}
+              onSendLive={handleCommitPreviewToLive}
+              liveTitle={liveItem.title}
+              liveSlides={liveSlides}
+              liveSlideIndex={liveSlideIndex}
+              isBlanked={isBlanked}
+              isCleared={isCleared}
+              onSelectLiveSlideDirect={handleSelectLiveSlideDirect}
+              onToggleBlank={() => setIsBlanked(!isBlanked)}
+              onToggleClear={() => setIsCleared(!isCleared)}
+            />
+
+            {/* Column 3: Service Order & Themes (Right ~260px) */}
+            <ServiceAndThemesPanel
               queueItems={serviceQueue}
-              currentQueueItemId={stagedItemId}
+              stagedItemId={stagedItemId}
               onSelectQueueItem={handleStageServiceItem}
               onSaveService={handleSaveServiceFile}
               onOpenService={handleOpenServiceFile}
             />
-
-            {/* Panel 3: Preview (Staging Area) */}
-            <PreviewStagePanel
-              itemTitle={stagedItem.title}
-              slideText={stagedSlideText}
-              slides={stagedSlides}
-              selectedIndex={stagedSlideIndex}
-              onSelectSlide={setStagedSlideIndex}
-              onSendLive={handleCommitPreviewToLive}
-            />
-
-            {/* Panel 4: Live (On-Air Congregation Output) */}
-            <LiveStagePanel
-              itemTitle={liveItem.title}
-              slideText={liveSlideText}
-              slides={liveSlides}
-              selectedIndex={liveSlideIndex}
-              isBlanked={isBlanked}
-              isCleared={isCleared}
-              onSelectSlideDirect={handleSelectLiveSlideDirect}
-              onToggleBlank={() => setIsBlanked(!isBlanked)}
-              onToggleClear={() => setIsCleared(!isCleared)}
-            />
           </>
         )}
 
-        {/* Dedicated Subsystem Tabs */}
+        {/* Dedicated Subsystem Overlays */}
         {activeMode !== 'slides' && (
-          <div className="flex-1 bg-app-panel p-0 overflow-hidden border-r border-app-border">
+          <div className="flex-1 bg-[#2d2d2d] p-0 overflow-hidden border-r border-[#3e3e42]">
             {activeMode === 'bible' ? (
               <BibleView onProjectBible={handleProjectBible} onAddToService={handleAddToServiceQueue} />
             ) : activeMode === 'hymnal' ? (
@@ -342,11 +359,11 @@ export default function OperatorDashboard() {
             ) : activeMode === 'remote' ? (
               <RemoteAiTab
                 remoteUrl={remoteUrl}
-                isTranscribing={isTranscribing}
-                transcriberStatus={transcriberStatus}
-                transcriberMsg={transcriberMsg}
-                transcriptLog={transcriptLog}
-                onToggleTranscribe={() => setIsTranscribing(!isTranscribing)}
+                isTranscribing={false}
+                transcriberStatus="idle"
+                transcriberMsg=""
+                transcriptLog={[]}
+                onToggleTranscribe={() => {}}
               />
             ) : activeMode === 'themes' ? (
               <ThemeManagerView />

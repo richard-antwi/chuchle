@@ -6,6 +6,7 @@ import OrderOfServicePanel, { ServiceQueueItem } from '../components/dashboard/O
 import StagePreviewPanel from '../components/dashboard/StagePreviewPanel'
 import MockupStatusBar from '../components/dashboard/MockupStatusBar'
 
+import BibleView from './tabs/BibleView'
 import ScriptureHymnalTab from './tabs/ScriptureHymnalTab'
 import CameraVisualsTab from './tabs/CameraVisualsTab'
 import AudioTab from './tabs/AudioTab'
@@ -243,8 +244,10 @@ export default function OperatorDashboard() {
 
         {/* Subsystem Overlays */}
         {activeMode !== 'slides' && (
-          <div className="flex-1 bg-white p-4 overflow-y-auto border-r border-[#d7dbe1]">
-            {activeMode === 'bible' || activeMode === 'hymnal' ? (
+          <div className="flex-1 bg-white p-0 overflow-hidden border-r border-[#d7dbe1]">
+            {activeMode === 'bible' ? (
+              <BibleView onProjectBible={handleProjectBible} />
+            ) : activeMode === 'hymnal' ? (
               <ScriptureHymnalTab onProjectBible={handleProjectBible} onProjectHymn={handleProjectHymn} />
             ) : activeMode === 'camera' ? (
               <CameraVisualsTab />

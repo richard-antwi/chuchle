@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import MenuBar from '../components/dashboard/MenuBar'
 import DashboardToolbar from '../components/dashboard/DashboardToolbar'
 import LibraryPanel, { SongItem } from '../components/dashboard/LibraryPanel'
 import OrderOfServicePanel, { ServiceQueueItem } from '../components/dashboard/OrderOfServicePanel'
-import StagePreviewPanel from '../components/dashboard/StagePreviewPanel'
+import PreviewStagePanel from '../components/dashboard/PreviewStagePanel'
+import LiveStagePanel from '../components/dashboard/LiveStagePanel'
 import MockupStatusBar from '../components/dashboard/MockupStatusBar'
 
 import BibleView from './tabs/BibleView'
@@ -12,6 +13,8 @@ import CameraVisualsTab from './tabs/CameraVisualsTab'
 import AudioTab from './tabs/AudioTab'
 import StreamingTab from './tabs/StreamingTab'
 import RemoteAiTab from './tabs/RemoteAiTab'
+import ThemeManagerView from './tabs/ThemeManagerView'
+import SettingsView from './tabs/SettingsView'
 
 import { useDisplayStore } from '../stores/useDisplayStore'
 import { ObsControllerService } from '../services/ObsControllerService'
@@ -19,7 +22,7 @@ import { ObsControllerService } from '../services/ObsControllerService'
 export default function OperatorDashboard() {
   const [activeMode, setActiveMode] = useState<string>('slides')
 
-  // Service Queue State matching approved mockup HTML
+  // Service Queue State
   const [serviceQueue, setServiceQueue] = useState<ServiceQueueItem[]>([
     {
       id: 'svc_psalm_100',
@@ -61,53 +64,44 @@ export default function OperatorDashboard() {
       sub: 'Parallel KJV / NIV',
       type: 'scripture',
       slides: ['For God so loved the world | For God so loved the world']
-    },
-    {
-      id: 'svc_nyame_ye',
-      title: 'Nyame Ye',
-      sub: 'Twi / English hymnal',
-      type: 'hymnal',
-      slides: ['Nyame ye pa | God is good']
-    },
-    {
-      id: 'svc_offering',
-      title: 'Offering',
-      sub: 'Background loop',
-      type: 'other',
-      slides: ['Tithes & Offering']
-    },
-    {
-      id: 'svc_blessed',
-      title: 'Blessed Assurance',
-      sub: 'Closing hymn',
-      type: 'song',
-      slides: ['Blessed assurance, Jesus is mine!']
     }
   ])
 
-  const [currentQueueItemId, setCurrentQueueItemId] = useState<string>('svc_amazing_grace')
-  const [selectedSlideIndex, setSelectedSlideIndex] = useState<number>(1)
+  // 2-STAGE COMMIT STATES
+  // Stage 1: Preview Staging
+  const [stagedItemId, setStagedItemId] = useState<string>('svc_how_great')
+  const [stagedSlideIndex, setStagedSlideIndex] = useState<number>(0)
+
+  // Stage 2: Live On-Air Output
+  const [liveItemId, setLiveItemId] = useState<string>('svc_amazing_grace')
+  const [liveSlideIndex, setLiveSlideIndex] = useState<number>(0)
+
+  const [isBlanked, setIsBlanked] = useState<boolean>(false)
+  const [isCleared, setIsCleared] = useState<boolean>(false)
+
   const [selectedSongId, setSelectedSongId] = useState<string>('song_amazing_grace')
-
-  // OBS WebSocket state
   const [obsConnected, setObsConnected] = useState(false)
-
-  // Web Remote state
   const [remoteUrl, setRemoteUrl] = useState('')
 
   // AI Transcriber state
   const [isTranscribing, setIsTranscribing] = useState(false)
-  const [transcriberStatus, setTranscriberStatus] = useState('idle')
-  const [transcriberMsg, setTranscriberMsg] = useState('')
-  const [transcriptLog, setTranscriptLog] = useState<string[]>([])
+  const [transcriberStatus] = useState('idle')
+  const [transcriberMsg] = useState('')
+  const [transcriptLog] = useState<string[]>([])
 
   // Zustand Display Store Hooks
-  const activeLyrics = useDisplayStore((state) => state.currentLyrics)
-  const stageInfo = useDisplayStore((state) => state.stageInfo)
+  const updateStoreLyrics = useDisplayStore((state) => state.setLyrics)
+  const setStageInfo = useDisplayStore((state) => state.setStageInfo)
   const activeBackground = useDisplayStore((state) => state.activeBackground)
 
-  const setLyrics = useDisplayStore((state) => state.setLyrics)
-  const setStageInfo = useDisplayStore((state) => state.setStageInfo)
+  // Derived Items
+  const stagedItem = serviceQueue.find((i) => i.id === stagedItemId) || serviceQueue[0]
+  const stagedSlides = stagedItem ? stagedItem.slides || [] : []
+  const stagedSlideText = stagedSlides[stagedSlideIndex] || ''
+
+  const liveItem = serviceQueue.find((i) => i.id === liveItemId) || serviceQueue[1]
+  const liveSlides = liveItem ? liveItem.slides || [] : []
+  const liveSlideText = liveSlides[liveSlideIndex] || ''
 
   useEffect(() => {
     if (window.electron && window.electron.ipcRenderer) {
@@ -118,35 +112,62 @@ export default function OperatorDashboard() {
     setObsConnected(ObsControllerService.getConnected())
   }, [])
 
-  // Listen to AI Transcriber Web Worker
-  useEffect(() => {
-    let worker: Worker | null = null
-    try {
-      worker = new Worker(new URL('../workers/transcription.worker.ts', import.meta.url), {
-        type: 'module'
-      })
-      worker.onmessage = (e: MessageEvent) => {
-        const { type, status, text, message } = e.data
-        if (type === 'status') {
-          setTranscriberStatus(status)
-          if (message) setTranscriberMsg(message)
-        } else if (type === 'result') {
-          if (text) setTranscriptLog((prev) => [...prev, text])
-        }
+  // Send updates to WebGL Audience outputs & IPC state
+  const broadcastLiveState = useCallback(
+    (itemTitle: string, text: string, nextText: string) => {
+      updateStoreLyrics([text])
+      setStageInfo({ nextVerse: nextText })
+      ObsControllerService.handleSlideTransition(itemTitle, text, activeBackground.type === 'video')
+
+      if (window.electron && window.electron.ipcRenderer) {
+        window.electron.ipcRenderer.send('update-projection-state', {
+          currentLyrics: [text],
+          stageInfo: { nextVerse: nextText }
+        })
       }
-    } catch (e) {
-      console.error('Whisper worker initialization error:', e)
-    }
-    return () => {
-      if (worker) worker.terminate()
-    }
-  }, [])
+    },
+    [updateStoreLyrics, setStageInfo, activeBackground]
+  )
 
-  // Active Queue Item details
-  const activeQueueItem = serviceQueue.find((item) => item.id === currentQueueItemId) || serviceQueue[1]
-  const currentSlides = activeQueueItem.slides || []
+  // COMMIT FUNCTION: Send Preview -> Live
+  const handleCommitPreviewToLive = useCallback(() => {
+    setLiveItemId(stagedItemId)
+    setLiveSlideIndex(stagedSlideIndex)
+    setIsBlanked(false)
 
-  // Selection Handlers
+    setServiceQueue((prev) =>
+      prev.map((i) => ({
+        ...i,
+        isCurrent: i.id === stagedItemId
+      }))
+    )
+
+    const nextText = stagedSlides[stagedSlideIndex + 1] || 'End of item'
+    broadcastLiveState(stagedItem.title, stagedSlideText, nextText)
+  }, [stagedItemId, stagedSlideIndex, stagedItem, stagedSlides, stagedSlideText, broadcastLiveState])
+
+  // Direct Live Jump (within current live item)
+  const handleSelectLiveSlideDirect = (idx: number) => {
+    setLiveSlideIndex(idx)
+    setIsBlanked(false)
+    const text = liveSlides[idx] || ''
+    const nextText = liveSlides[idx + 1] || 'End of item'
+    broadcastLiveState(liveItem.title, text, nextText)
+  }
+
+  // Stage 1: Single Click in Service Queue -> Load into Preview
+  const handleStageServiceItem = (item: ServiceQueueItem) => {
+    setStagedItemId(item.id)
+    setStagedSlideIndex(0)
+  }
+
+  const handleAddToServiceQueue = (item: ServiceQueueItem) => {
+    setServiceQueue((prev) => [...prev, item])
+    setStagedItemId(item.id)
+    setStagedSlideIndex(0)
+  }
+
+  // Double Click in Library -> Add to Service Queue & Stage in Preview
   const handleSelectSongFromLibrary = (song: SongItem) => {
     setSelectedSongId(song.id)
     const newQueueItem: ServiceQueueItem = {
@@ -154,59 +175,104 @@ export default function OperatorDashboard() {
       title: song.title,
       sub: song.author || 'Song library item',
       type: 'song',
-      isCurrent: true,
       slides: [
         `${song.title}\nVerse 1`,
         'Amazing grace how sweet the sound\nThat saved a wretch like me',
         'Was blind but now I see'
       ]
     }
-    setServiceQueue((prev) => [newQueueItem, ...prev.map((i) => ({ ...i, isCurrent: false }))])
-    setCurrentQueueItemId(newQueueItem.id)
-    setSelectedSlideIndex(0)
-    setLyrics([newQueueItem.slides![0]])
-    setStageInfo({ nextVerse: newQueueItem.slides![1] || 'End of song' })
+    handleAddToServiceQueue(newQueueItem)
   }
 
-  const handleSelectQueueItem = (item: ServiceQueueItem) => {
-    setCurrentQueueItemId(item.id)
-    setServiceQueue((prev) =>
-      prev.map((i) => ({
-        ...i,
-        isCurrent: i.id === item.id
-      }))
-    )
-    setSelectedSlideIndex(0)
-    const itemSlides = item.slides || []
-    if (itemSlides.length > 0) {
-      setLyrics([itemSlides[0]])
-      setStageInfo({ nextVerse: itemSlides[1] || 'End of presentation' })
-      ObsControllerService.handleSlideTransition(item.title, itemSlides[0], activeBackground.type === 'video')
+  // Disk Service File Save / Open Handlers
+  const handleSaveServiceFile = async () => {
+    if (window.electron && window.electron.ipcRenderer) {
+      await window.electron.ipcRenderer.invoke('save-service-file', serviceQueue)
     }
   }
 
-  const handleSelectSlideIndex = (idx: number) => {
-    setSelectedSlideIndex(idx)
-    if (currentSlides[idx]) {
-      setLyrics([currentSlides[idx]])
-      setStageInfo({ nextVerse: currentSlides[idx + 1] || 'End of presentation' })
-      ObsControllerService.handleSlideTransition(
-        activeQueueItem.title,
-        currentSlides[idx],
-        activeBackground.type === 'video'
-      )
+  const handleOpenServiceFile = async () => {
+    if (window.electron && window.electron.ipcRenderer) {
+      const loaded = await window.electron.ipcRenderer.invoke('open-service-file')
+      if (Array.isArray(loaded)) {
+        setServiceQueue(loaded)
+        if (loaded[0]) {
+          setStagedItemId(loaded[0].id)
+          setStagedSlideIndex(0)
+        }
+      }
     }
   }
 
-  // Handlers for Subsystem Handoffs
+  // Keyboard Shortcuts (Section 2 OpenLP-Pattern)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault()
+        const currentIdx = serviceQueue.findIndex((i) => i.id === stagedItemId)
+        if (currentIdx > 0) {
+          const nextItem = serviceQueue[currentIdx - 1]
+          setStagedItemId(nextItem.id)
+          setStagedSlideIndex(0)
+        }
+      } else if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        e.preventDefault()
+        const currentIdx = serviceQueue.findIndex((i) => i.id === stagedItemId)
+        if (currentIdx !== -1 && currentIdx < serviceQueue.length - 1) {
+          const nextItem = serviceQueue[currentIdx + 1]
+          setStagedItemId(nextItem.id)
+          setStagedSlideIndex(0)
+        }
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        if (stagedSlideIndex < stagedSlides.length - 1) {
+          setStagedSlideIndex(stagedSlideIndex + 1)
+        }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        if (stagedSlideIndex > 0) {
+          setStagedSlideIndex(stagedSlideIndex - 1)
+        }
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        handleCommitPreviewToLive()
+      } else if (e.key === 'Escape' || e.code === 'KeyB') {
+        e.preventDefault()
+        setIsBlanked((prev) => !prev)
+      } else if (e.code === 'KeyC') {
+        e.preventDefault()
+        setIsCleared((prev) => !prev)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [serviceQueue, stagedItemId, stagedSlideIndex, stagedSlides, handleCommitPreviewToLive])
+
+  // Subsystem Handoffs
   const handleProjectBible = (lines: string[]) => {
-    setLyrics(lines)
-    setStageInfo({ nextVerse: 'End of scripture reading.' })
+    const newQueueItem: ServiceQueueItem = {
+      id: `svc_bible_${Date.now()}`,
+      title: lines[0] || 'Scripture Passage',
+      sub: 'Scripture lookup',
+      type: 'scripture',
+      slides: lines
+    }
+    handleAddToServiceQueue(newQueueItem)
     setActiveMode('slides')
   }
 
   const handleProjectHymn = (lines: string[]) => {
-    setLyrics(lines)
+    const newQueueItem: ServiceQueueItem = {
+      id: `svc_hymn_${Date.now()}`,
+      title: lines[0] || 'Methodist Hymn',
+      sub: 'MHB Hymnal',
+      type: 'hymnal',
+      slides: lines
+    }
+    handleAddToServiceQueue(newQueueItem)
     setActiveMode('slides')
   }
 
@@ -216,39 +282,57 @@ export default function OperatorDashboard() {
       <MenuBar />
 
       {/* 2. Toolbar */}
-      <DashboardToolbar activeMode={activeMode} onModeChange={setActiveMode} isLive={activeLyrics.length > 0} />
+      <DashboardToolbar activeMode={activeMode} onModeChange={setActiveMode} isLive={liveSlides.length > 0} />
 
-      {/* 3. Main 3-Pane Body */}
-      <div className="mockup-main">
-        {/* Left Pane: Song Library */}
+      {/* 3. Main OpenLP 4-Panel Body */}
+      <div className="mockup-main flex-1 flex min-h-0">
+        {/* Panel 1: Song Library */}
         <LibraryPanel selectedSongId={selectedSongId} onSelectSong={handleSelectSongFromLibrary} />
 
-        {/* Middle & Right Panes */}
+        {/* Panel 2 & 3 & 4 (OpenLP Staging Model) */}
         {activeMode === 'slides' && (
           <>
+            {/* Panel 2: Service Queue */}
             <OrderOfServicePanel
               queueItems={serviceQueue}
-              currentQueueItemId={currentQueueItemId}
-              onSelectQueueItem={handleSelectQueueItem}
+              currentQueueItemId={stagedItemId}
+              onSelectQueueItem={handleStageServiceItem}
+              onSaveService={handleSaveServiceFile}
+              onOpenService={handleOpenServiceFile}
             />
 
-            <StagePreviewPanel
-              liveText={activeLyrics.join('\n')}
-              nextText={stageInfo.nextVerse}
-              slides={currentSlides}
-              currentSlideIndex={selectedSlideIndex}
-              onSelectSlideIndex={handleSelectSlideIndex}
+            {/* Panel 3: Preview (Staging Area) */}
+            <PreviewStagePanel
+              itemTitle={stagedItem.title}
+              slideText={stagedSlideText}
+              slides={stagedSlides}
+              selectedIndex={stagedSlideIndex}
+              onSelectSlide={setStagedSlideIndex}
+              onSendLive={handleCommitPreviewToLive}
+            />
+
+            {/* Panel 4: Live (On-Air Congregation Output) */}
+            <LiveStagePanel
+              itemTitle={liveItem.title}
+              slideText={liveSlideText}
+              slides={liveSlides}
+              selectedIndex={liveSlideIndex}
+              isBlanked={isBlanked}
+              isCleared={isCleared}
+              onSelectSlideDirect={handleSelectLiveSlideDirect}
+              onToggleBlank={() => setIsBlanked(!isBlanked)}
+              onToggleClear={() => setIsCleared(!isCleared)}
             />
           </>
         )}
 
-        {/* Subsystem Overlays */}
+        {/* Dedicated Subsystem Tabs */}
         {activeMode !== 'slides' && (
           <div className="flex-1 bg-app-panel p-0 overflow-hidden border-r border-app-border">
             {activeMode === 'bible' ? (
-              <BibleView onProjectBible={handleProjectBible} />
+              <BibleView onProjectBible={handleProjectBible} onAddToService={handleAddToServiceQueue} />
             ) : activeMode === 'hymnal' ? (
-              <HymnalView onProjectHymn={handleProjectHymn} />
+              <HymnalView onProjectHymn={handleProjectHymn} onAddToService={handleAddToServiceQueue} />
             ) : activeMode === 'camera' ? (
               <CameraVisualsTab />
             ) : activeMode === 'audio' ? (
@@ -264,6 +348,10 @@ export default function OperatorDashboard() {
                 transcriptLog={transcriptLog}
                 onToggleTranscribe={() => setIsTranscribing(!isTranscribing)}
               />
+            ) : activeMode === 'themes' ? (
+              <ThemeManagerView />
+            ) : activeMode === 'settings' ? (
+              <SettingsView />
             ) : null}
           </div>
         )}

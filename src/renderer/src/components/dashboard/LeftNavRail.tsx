@@ -19,7 +19,8 @@ const TABS: TabItem[] = [
   { id: 'audio', label: 'Audio Mixer', icon: '🎛️' },
   { id: 'streaming', label: 'Streaming', icon: '📡' },
   { id: 'remote', label: 'Remote & AI', icon: '🎙️' },
-  { id: 'setup', label: 'Displays & Setup', icon: '⚙️' }
+  { id: 'themes', label: 'Theme Manager', icon: '🎨' },
+  { id: 'settings', label: 'System Settings', icon: '⚙️' }
 ]
 
 export default function LeftNavRail({ activeTab, onTabChange }: LeftNavRailProps) {

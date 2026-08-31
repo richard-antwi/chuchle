@@ -11,18 +11,42 @@ interface OrderOfServicePanelProps {
   queueItems: ServiceQueueItem[]
   currentQueueItemId: string
   onSelectQueueItem: (item: ServiceQueueItem) => void
+  onSaveService?: () => void
+  onOpenService?: () => void
 }
 
 export default function OrderOfServicePanel({
   queueItems,
   currentQueueItemId,
-  onSelectQueueItem
+  onSelectQueueItem,
+  onSaveService,
+  onOpenService
 }: OrderOfServicePanelProps) {
   return (
     <div className="mockup-panel mockup-service">
-      <div className="panel-head">
-        <h2>Order of service</h2>
-        <span className="count">{new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} — {queueItems.length} items</span>
+      <div className="panel-head flex flex-col gap-2 p-3 border-b border-app-border">
+        <div className="flex justify-between items-center w-full">
+          <h2>Order of service</h2>
+          <span className="count">{new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} — {queueItems.length} items</span>
+        </div>
+        <div className="flex gap-2 w-full pt-1">
+          {onOpenService && (
+            <button
+              onClick={onOpenService}
+              className="flex-1 py-1 px-2 bg-app-toolbar border border-app-border rounded text-[10px] font-bold text-app-text-2 hover:text-app-text hover:bg-app-panel transition cursor-pointer"
+            >
+              📂 Open Service
+            </button>
+          )}
+          {onSaveService && (
+            <button
+              onClick={onSaveService}
+              className="flex-1 py-1 px-2 bg-app-accent-bg border border-app-accent/30 rounded text-[10px] font-bold text-app-accent hover:bg-app-accent hover:text-white transition cursor-pointer"
+            >
+              💾 Save .churchle
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="service-list">

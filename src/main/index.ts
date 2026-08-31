@@ -1,5 +1,6 @@
-import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, screen, dialog } from 'electron'
 import { join } from 'path'
+import { writeFile, readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { initDatabase, getDb } from './db'
@@ -152,6 +153,29 @@ app.whenReady().then(() => {
       results[entry.language] = stmt.all(entry.id)
     }
     return results
+  })
+
+  // Service File Save & Load IPC Handlers
+  ipcMain.handle('save-service-file', async (_event, serviceData: any) => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Save Order of Service File',
+      defaultPath: 'Sunday_Service.churchle',
+      filters: [{ name: 'Churchle Service File (*.churchle)', extensions: ['churchle', 'json'] }]
+    })
+    if (canceled || !filePath) return false
+    await writeFile(filePath, JSON.stringify(serviceData, null, 2), 'utf-8')
+    return true
+  })
+
+  ipcMain.handle('open-service-file', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Open Order of Service File',
+      filters: [{ name: 'Churchle Service File (*.churchle)', extensions: ['churchle', 'json'] }],
+      properties: ['openFile']
+    })
+    if (canceled || filePaths.length === 0) return null
+    const content = await readFile(filePaths[0], 'utf-8')
+    return JSON.parse(content)
   })
 
   // VLC Media Remote Control IPC handler

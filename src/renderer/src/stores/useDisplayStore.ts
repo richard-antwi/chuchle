@@ -29,6 +29,7 @@ export interface ProjectionState {
     similarity: number
     smoothness: number
   }
+  uiThemeMode: 'dark' | 'light'
 }
 
 interface DisplayStore extends ProjectionState {
@@ -39,6 +40,8 @@ interface DisplayStore extends ProjectionState {
   setCameraDeviceId: (id: string) => void
   setColorGrading: (grading: Partial<ProjectionState['colorGrading']>) => void
   setChromaKey: (keying: Partial<ProjectionState['chromaKey']>) => void
+  setUiThemeMode: (mode: 'dark' | 'light') => void
+  toggleUiThemeMode: () => void
   updateState: (newState: Partial<ProjectionState>) => void
 }
 
@@ -51,6 +54,8 @@ export const useDisplayStore = create<DisplayStore>()(
     activeCameraDeviceId: '',
     colorGrading: { brightness: 1.0, contrast: 1.0, saturation: 1.0 },
     chromaKey: { enabled: false, color: '#00ff00', similarity: 0.4, smoothness: 0.1 },
+
+    uiThemeMode: 'dark',
 
     setLyrics: (lyrics) => {
       set((state) => {
@@ -93,6 +98,16 @@ export const useDisplayStore = create<DisplayStore>()(
         state.chromaKey = { ...state.chromaKey, ...keying }
       })
       syncStateToMain(get())
+    },
+    setUiThemeMode: (mode) => {
+      set((state) => {
+        state.uiThemeMode = mode
+      })
+    },
+    toggleUiThemeMode: () => {
+      set((state) => {
+        state.uiThemeMode = state.uiThemeMode === 'dark' ? 'light' : 'dark'
+      })
     },
     updateState: (newState) => {
       set((state) => {

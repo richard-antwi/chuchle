@@ -1,3 +1,5 @@
+import { useDisplayStore } from '../../stores/useDisplayStore'
+
 interface DashboardToolbarProps {
   activeMode: string
   onModeChange: (mode: string) => void
@@ -9,6 +11,9 @@ export default function DashboardToolbar({
   onModeChange,
   isLive = true
 }: DashboardToolbarProps) {
+  const uiThemeMode = useDisplayStore((state) => state.uiThemeMode)
+  const toggleUiThemeMode = useDisplayStore((state) => state.toggleUiThemeMode)
+
   return (
     <div className="toolbar">
       {/* File Action Buttons */}
@@ -138,6 +143,16 @@ export default function DashboardToolbar({
       </button>
 
       <div className="toolbar-spacer" />
+
+      {/* Light / Dark Mode Toggle Button */}
+      <button
+        onClick={toggleUiThemeMode}
+        className="px-3 py-1.5 rounded-lg border border-app-border bg-app-panel text-app-text text-xs font-bold transition hover:border-app-accent cursor-pointer flex items-center gap-1.5 mr-2 shadow-sm"
+        title="Toggle Light / Dark Mode"
+      >
+        <span>{uiThemeMode === 'dark' ? '☀️' : '🌙'}</span>
+        <span>{uiThemeMode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+      </button>
 
       {/* Live / On Air Status Badge */}
       <div className="live-indicator">

@@ -99,6 +99,39 @@ export default function OperatorDashboard() {
   const liveItem = serviceQueue.find((i) => i.id === liveItemId) || serviceQueue[0]
   const liveSlides = liveItem ? liveItem.slides || [] : []
 
+  const uiThemeMode = useDisplayStore((state) => state.uiThemeMode)
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (uiThemeMode === 'light') {
+      root.style.setProperty('--bg', '#eef0f3')
+      root.style.setProperty('--panel', '#ffffff')
+      root.style.setProperty('--border', '#d7dbe1')
+      root.style.setProperty('--border-strong', '#b9c0ca')
+      root.style.setProperty('--text', '#22262c')
+      root.style.setProperty('--text-2', '#5b6270')
+      root.style.setProperty('--text-3', '#9399a4')
+      root.style.setProperty('--accent', '#2f6fed')
+      root.style.setProperty('--accent-bg', '#e8f0fe')
+      root.style.setProperty('--toolbar', '#f6f7f9')
+      root.style.setProperty('--live', '#d8352c')
+      root.style.setProperty('--live-bg', '#fdeceb')
+    } else {
+      root.style.setProperty('--bg', '#1e1e1e')
+      root.style.setProperty('--panel', '#2d2d2d')
+      root.style.setProperty('--border', '#3e3e42')
+      root.style.setProperty('--border-strong', '#505054')
+      root.style.setProperty('--text', '#ffffff')
+      root.style.setProperty('--text-2', '#bbbbbb')
+      root.style.setProperty('--text-3', '#888888')
+      root.style.setProperty('--accent', '#2b73d2')
+      root.style.setProperty('--accent-bg', '#1b4985')
+      root.style.setProperty('--toolbar', '#252526')
+      root.style.setProperty('--live', '#d8352c')
+      root.style.setProperty('--live-bg', '#3f1917')
+    }
+  }, [uiThemeMode])
+
   useEffect(() => {
     if (window.electron && window.electron.ipcRenderer) {
       window.electron.ipcRenderer.invoke('get-remote-url').then((url) => {
@@ -287,7 +320,7 @@ export default function OperatorDashboard() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#1e1e1e] text-white font-sans overflow-hidden select-none">
+    <div className="flex flex-col h-screen w-screen bg-app-bg text-app-text font-sans overflow-hidden select-none">
       {/* 1. Menu Bar */}
       <MenuBar />
 
@@ -295,7 +328,7 @@ export default function OperatorDashboard() {
       <DashboardToolbar activeMode={activeMode} onModeChange={setActiveMode} isLive={liveSlides.length > 0} />
 
       {/* 3. Main OpenLP 3-Column Body (Matching Picture 1) */}
-      <div className="mockup-main flex-1 flex min-h-0 bg-[#1e1e1e]">
+      <div className="mockup-main flex-1 flex min-h-0 bg-app-bg">
         {activeMode === 'slides' && (
           <>
             {/* Column 1: Library Accordion (Left ~260px) */}
@@ -345,7 +378,7 @@ export default function OperatorDashboard() {
 
         {/* Dedicated Subsystem Overlays */}
         {activeMode !== 'slides' && (
-          <div className="flex-1 bg-[#2d2d2d] p-0 overflow-hidden border-r border-[#3e3e42]">
+          <div className="flex-1 bg-app-panel p-0 overflow-hidden border-r border-app-border">
             {activeMode === 'bible' ? (
               <BibleView onProjectBible={handleProjectBible} onAddToService={handleAddToServiceQueue} />
             ) : activeMode === 'hymnal' ? (

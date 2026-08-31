@@ -48,7 +48,7 @@ export default function OpenLpCenterPanel({
         </div>
 
         {/* Top 50%: Verse Text Table (Matching Picture 1 Table View) */}
-        <div className="h-1/2 border-b border-app-border overflow-y-auto bg-[#191919]">
+        <div className="h-1/2 border-b border-app-border overflow-y-auto bg-app-panel">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-app-border text-[10px] text-app-text-3 uppercase bg-app-toolbar">
@@ -66,8 +66,8 @@ export default function OpenLpCenterPanel({
                       key={idx}
                       onClick={() => onSelectStagedSlide(idx)}
                       onDoubleClick={onSendLive}
-                      className={`border-b border-[#2a2a2a] cursor-pointer font-sans transition ${
-                        isSel ? 'bg-app-accent text-white font-bold' : 'text-app-text hover:bg-[#252526]'
+                      className={`border-b border-app-border/50 cursor-pointer font-sans transition ${
+                        isSel ? 'bg-app-accent text-white font-bold' : 'text-app-text hover:bg-app-toolbar'
                       }`}
                     >
                       <td className="p-1.5 align-top font-mono text-[10px] text-app-text-3 font-bold">{tag}</td>
@@ -136,7 +136,7 @@ export default function OpenLpCenterPanel({
         </div>
 
         {/* Top 50%: Live Verse Text Table (Matching Picture 1 Table View) */}
-        <div className="h-1/2 border-b border-app-border overflow-y-auto bg-[#191919]">
+        <div className="h-1/2 border-b border-app-border overflow-y-auto bg-app-panel">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-app-border text-[10px] text-app-text-3 uppercase bg-app-toolbar">
@@ -153,8 +153,8 @@ export default function OpenLpCenterPanel({
                     <tr
                       key={idx}
                       onClick={() => onSelectLiveSlideDirect(idx)}
-                      className={`border-b border-[#2a2a2a] cursor-pointer font-sans transition ${
-                        isSel ? 'bg-app-accent text-white font-bold' : 'text-app-text hover:bg-[#252526]'
+                      className={`border-b border-app-border/50 cursor-pointer font-sans transition ${
+                        isSel ? 'bg-app-accent text-white font-bold' : 'text-app-text hover:bg-app-toolbar'
                       }`}
                     >
                       <td className="p-1.5 align-top font-mono text-[10px] text-app-text-3 font-bold">{tag}</td>

@@ -79,7 +79,7 @@ export default function ServiceAndThemesPanel({
         </div>
 
         {/* Scrollable Service Items List */}
-        <div className="flex-1 overflow-y-auto p-1 space-y-0.5 bg-[#191919]">
+        <div className="flex-1 overflow-y-auto p-1 space-y-0.5 bg-app-panel">
           {queueItems.map((item, idx) => {
             const isStaged = stagedItemId === item.id
             return (
@@ -148,7 +148,7 @@ export default function ServiceAndThemesPanel({
         </div>
 
         {/* Scrollable Theme Thumbnail Cards List (Matching Picture 1) */}
-        <div className="flex-1 overflow-y-auto p-1.5 space-y-2 bg-[#191919]">
+        <div className="flex-1 overflow-y-auto p-1.5 space-y-2 bg-app-panel">
           {themes.map((th) => {
             const isSel = selectedThemeId === th.id
             return (

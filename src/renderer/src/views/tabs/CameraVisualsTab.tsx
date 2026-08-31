@@ -1,7 +1,44 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react'
 import { CameraService, CameraDevice } from '../../services/CameraService'
 import { useDisplayStore } from '../../stores/useDisplayStore'
 import PixiStage from '../../components/PixiStage'
+
+interface ErrorBoundaryProps {
+  children: ReactNode
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean
+  error?: Error
+}
+
+class CameraErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = {
+    hasError: false
+  }
+
+  public static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Camera tab preview error caught:', error, errorInfo)
+  }
+
+  public render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-app-toolbar rounded-lg border border-app-border text-center space-y-2">
+          <span className="text-sm font-black text-app-accent">Camera Preview Standby</span>
+          <span className="text-xs text-app-text-3">
+            {this.state.error?.message || 'WebGL canvas / video hardware currently locked or in use.'}
+          </span>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 export default function CameraVisualsTab() {
   const [cameras, setCameras] = useState<CameraDevice[]>([])
@@ -15,9 +52,13 @@ export default function CameraVisualsTab() {
   const setChromaKey = useDisplayStore((state) => state.setChromaKey)
 
   useEffect(() => {
-    CameraService.getCameras().then((devs) => {
-      setCameras(devs)
-    })
+    CameraService.getCameras()
+      .then((devs) => {
+        setCameras(devs || [])
+      })
+      .catch((err) => {
+        console.warn('CameraService getCameras error:', err)
+      })
   }, [])
 
   return (
@@ -151,7 +192,9 @@ export default function CameraVisualsTab() {
             <span className="h-2 w-2 rounded-full bg-app-accent animate-pulse" />
           </h3>
           <div className="flex-1 bg-black rounded-lg border border-app-border overflow-hidden min-h-[260px] relative flex items-center justify-center">
-            <PixiStage />
+            <CameraErrorBoundary>
+              <PixiStage />
+            </CameraErrorBoundary>
           </div>
           <div className="text-[10px] text-app-text-3 italic text-center">
             Real-time WebGL composite preview displaying shaders and keying.

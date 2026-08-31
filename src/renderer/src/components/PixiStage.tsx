@@ -41,37 +41,42 @@ export default function PixiStage() {
     let app: Application | null = null
 
     const initPixi = async () => {
-      app = new Application()
-      await app.init({
-        canvas: canvasRef.current!,
-        resizeTo: window,
-        antialias: true,
-        backgroundAlpha: 0
-      })
+      try {
+        app = new Application()
+        const parentElem = canvasRef.current?.parentElement || window
+        await app.init({
+          canvas: canvasRef.current!,
+          resizeTo: parentElem,
+          antialias: true,
+          backgroundAlpha: 0
+        })
 
-      if (!active) {
-        app.destroy(true, { children: true })
-        return
+        if (!active) {
+          app.destroy(true, { children: true })
+          return
+        }
+
+        appRef.current = app
+
+        const bgGraphics = new Graphics()
+        app.stage.addChild(bgGraphics)
+        bgGraphicsRef.current = bgGraphics
+
+        const cameraContainer = new Container()
+        app.stage.addChild(cameraContainer)
+        cameraContainerRef.current = cameraContainer
+
+        const textContainer = new Container()
+        app.stage.addChild(textContainer)
+        textContainerRef.current = textContainer
+
+        colorMatrixRef.current = new ColorMatrixFilter()
+        chromaKeyFilterRef.current = createChromaKeyFilter()
+
+        renderScene()
+      } catch (err) {
+        console.error('PixiStage initialization error:', err)
       }
-
-      appRef.current = app
-
-      const bgGraphics = new Graphics()
-      app.stage.addChild(bgGraphics)
-      bgGraphicsRef.current = bgGraphics
-
-      const cameraContainer = new Container()
-      app.stage.addChild(cameraContainer)
-      cameraContainerRef.current = cameraContainer
-
-      const textContainer = new Container()
-      app.stage.addChild(textContainer)
-      textContainerRef.current = textContainer
-
-      colorMatrixRef.current = new ColorMatrixFilter()
-      chromaKeyFilterRef.current = createChromaKeyFilter()
-
-      renderScene()
     }
 
     initPixi()
@@ -80,7 +85,11 @@ export default function PixiStage() {
       active = false
       cleanupCameraStream()
       if (app) {
-        app.destroy(true, { children: true })
+        try {
+          app.destroy(true, { children: true })
+        } catch (e) {
+          console.warn('Pixi destroy warning:', e)
+        }
       }
       appRef.current = null
       textContainerRef.current = null
@@ -111,24 +120,27 @@ export default function PixiStage() {
 
         video.onloadedmetadata = () => {
           if (!appRef.current || !cameraContainerRef.current) return
-          video.play()
+          try {
+            video.play()
+            videoElementRef.current = video
 
-          videoElementRef.current = video
+            const texture = Texture.from(video)
+            const cameraSprite = new Sprite(texture)
 
-          const texture = Texture.from(video)
-          const cameraSprite = new Sprite(texture)
+            const { width, height } = appRef.current.screen
+            cameraSprite.width = width
+            cameraSprite.height = height
 
-          const { width, height } = appRef.current.screen
-          cameraSprite.width = width
-          cameraSprite.height = height
+            cameraContainerRef.current.addChild(cameraSprite)
+            cameraSpriteRef.current = cameraSprite
 
-          cameraContainerRef.current.addChild(cameraSprite)
-          cameraSpriteRef.current = cameraSprite
-
-          applyFilters()
+            applyFilters()
+          } catch (e) {
+            console.warn('Video play or texture error:', e)
+          }
         }
       } catch (error) {
-        console.error('Failed to initialize webcam texture:', error)
+        console.warn('Failed to initialize webcam stream/texture (in use or unavailable):', error)
       }
     }
 

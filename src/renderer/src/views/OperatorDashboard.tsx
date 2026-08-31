@@ -54,11 +54,29 @@ export default function OperatorDashboard() {
   })
 
   // Center Presentation Deck states
-  const [activeCenterTab, setActiveCenterTab] = useState<'lyrics' | 'pdf'>('lyrics')
+  const [activeCenterTab, setActiveCenterTab] = useState<'lyrics' | 'pdf' | 'bibles'>('lyrics')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [extractingPdf, setExtractingPdf] = useState(false)
   const [pdfSlides, setPdfSlides] = useState<{ slideNumber: number; imageUrl: string }[]>([])
   const [selectedPdfSlideIndex, setSelectedPdfSlideIndex] = useState<number | null>(null)
+
+  // Bible & Hymnals states
+  const [bibleTranslations, setBibleTranslations] = useState<any[]>([])
+  const [selectedTranslations, setSelectedTranslations] = useState<string[]>(['KJV', 'NIV'])
+  const [bibleBook, setBibleBook] = useState('John')
+  const [bibleChapter, setBibleChapter] = useState('3')
+  const [bibleVerseStart, setBibleVerseStart] = useState('16')
+  const [bibleVerseEnd, setBibleVerseEnd] = useState('16')
+  const [bibleResults, setBibleResults] = useState<any>(null)
+
+  const [hymnQuery, setHymnQuery] = useState('1')
+  const [hymnVerses, setHymnVerses] = useState<Record<string, any[]>>({ English: [], Twi: [] })
+  const [activeHymnLanguage, setActiveHymnLanguage] = useState<'English' | 'Twi'>('English')
+
+  // Projected Hymn tracking for T toggle
+  const [projHymnNum, setProjHymnNum] = useState<number | null>(null)
+  const [projVerseNum, setProjVerseNum] = useState<number | null>(null)
+  const [projHymnLang, setProjHymnLang] = useState<'English' | 'Twi'>('English')
 
   // Zustand Store Hooks
   const activeLyrics = useDisplayStore((state) => state.currentLyrics)
@@ -150,6 +168,13 @@ export default function OperatorDashboard() {
       })
     }
 
+    // Query installed Bible translations
+    if (window.electron && window.electron.ipcRenderer) {
+      window.electron.ipcRenderer.invoke('get-installed-translations').then((res) => {
+        setBibleTranslations(res || [])
+      })
+    }
+
     return () => {
       if (intervalId) clearInterval(intervalId)
       WebAudioMixer.cleanup()
@@ -177,6 +202,24 @@ export default function OperatorDashboard() {
       }
     }
   }, [reflowed, activeLyrics])
+
+  // Bind T key language toggle
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) {
+        return
+      }
+
+      if (e.key === 't' || e.key === 'T') {
+        toggleProjectedLanguage()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [projHymnNum, projVerseNum, projHymnLang, hymnVerses])
 
   const handleReflow = () => {
     const res = parseAndReflowRawLyrics(inputText, 2)
@@ -354,6 +397,89 @@ export default function OperatorDashboard() {
     setPdfSlides([])
     setSelectedPdfSlideIndex(null)
     setPdfFile(null)
+  }
+
+  // Bible search handler
+  const handleBibleSearch = async () => {
+    if (window.electron && window.electron.ipcRenderer) {
+      const res = await window.electron.ipcRenderer.invoke(
+        'lookup-scripture',
+        bibleBook,
+        Number(bibleChapter),
+        Number(bibleVerseStart),
+        Number(bibleVerseEnd),
+        selectedTranslations
+      )
+      setBibleResults(res)
+    }
+  }
+
+  const projectBiblePassage = () => {
+    if (!bibleResults) return
+    const lines: string[] = []
+
+    const headerParts: string[] = []
+    selectedTranslations.forEach((tId) => {
+      headerParts.push(`${bibleBook} ${bibleChapter}:${bibleVerseStart} (${tId})`)
+    })
+    lines.push(headerParts.join(' | '))
+
+    const start = Number(bibleVerseStart)
+    const end = Number(bibleVerseEnd)
+    for (let v = start; v <= end; v++) {
+      const colParts: string[] = []
+      selectedTranslations.forEach((tId) => {
+        const verseObj = (bibleResults[tId] || []).find((rv: any) => rv.verse === v)
+        colParts.push(verseObj ? verseObj.text : '')
+      })
+      lines.push(colParts.join(' | '))
+    }
+
+    setLyrics(lines)
+    setStageInfo({ nextVerse: 'End of scripture reading.' })
+    setProjHymnNum(null)
+  }
+
+  // Hymnal handlers
+  const handleLoadHymn = async () => {
+    if (window.electron && window.electron.ipcRenderer) {
+      const res = await window.electron.ipcRenderer.invoke(
+        'get-hymn-verses-parallel',
+        Number(hymnQuery)
+      )
+      setHymnVerses(res || { English: [], Twi: [] })
+    }
+  }
+
+  const projectHymnVerse = (verseNum: number, lang: 'English' | 'Twi') => {
+    const list = hymnVerses[lang] || []
+    const verseObj = list.find((v) => v.verse_number === verseNum)
+    if (verseObj) {
+      const lines = verseObj.stanza_text.split('\n')
+      setLyrics(lines)
+
+      setProjHymnNum(Number(hymnQuery))
+      setProjVerseNum(verseNum)
+      setProjHymnLang(lang)
+
+      const nextVerseObj = list.find((v) => v.verse_number === verseNum + 1)
+      setStageInfo({
+        nextVerse: nextVerseObj ? `Next: Verse ${verseNum + 1}` : 'End of Hymn.'
+      })
+    }
+  }
+
+  // Language hotkey T toggler
+  const toggleProjectedLanguage = () => {
+    if (projHymnNum === null || projVerseNum === null) return
+    const nextLang = projHymnLang === 'English' ? 'Twi' : 'English'
+    const list = hymnVerses[nextLang] || []
+    const verseObj = list.find((v) => v.verse_number === projVerseNum)
+    if (verseObj) {
+      const lines = verseObj.stanza_text.split('\n')
+      setLyrics(lines)
+      setProjHymnLang(nextLang)
+    }
   }
 
   return (
@@ -725,6 +851,16 @@ export default function OperatorDashboard() {
               >
                 PDF Slide Importer
               </button>
+              <button
+                onClick={() => setActiveCenterTab('bibles')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition duration-155 cursor-pointer ${
+                  activeCenterTab === 'bibles'
+                    ? 'bg-indigo-600 text-slate-50 font-bold'
+                    : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Bibles & Hymnals
+              </button>
             </div>
           </div>
 
@@ -860,6 +996,197 @@ export default function OperatorDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeCenterTab === 'bibles' && (
+            <div className="space-y-6 flex-1 flex flex-col overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Bible Column */}
+                <div className="space-y-4 bg-slate-950/30 p-4 border border-slate-850 rounded-lg">
+                  <h3 className="text-xs font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
+                    Scripture Lookup
+                  </h3>
+
+                  {/* Translations Select */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 uppercase font-semibold">Translations</label>
+                    <div className="flex gap-4 flex-wrap text-xs">
+                      {bibleTranslations.map((t) => (
+                        <label key={t.id} className="flex items-center gap-1.5 text-slate-300 select-none cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedTranslations.includes(t.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedTranslations([...selectedTranslations, t.id])
+                              } else {
+                                setSelectedTranslations(selectedTranslations.filter((id) => id !== t.id))
+                              }
+                            }}
+                            className="rounded border-slate-800 text-indigo-600 focus:ring-indigo-500 accent-indigo-500 cursor-pointer"
+                          />
+                          {t.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Passage Fields */}
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="space-y-1 col-span-2">
+                      <label className="text-[10px] text-slate-500 uppercase font-semibold">Book</label>
+                      <input
+                        type="text"
+                        value={bibleBook}
+                        onChange={(e) => setBibleBook(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-slate-500 uppercase font-semibold">Chap</label>
+                      <input
+                        type="number"
+                        value={bibleChapter}
+                        onChange={(e) => setBibleChapter(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-slate-500 uppercase font-semibold">Verse</label>
+                      <input
+                        type="number"
+                        value={bibleVerseStart}
+                        onChange={(e) => {
+                          setBibleVerseStart(e.target.value)
+                          setBibleVerseEnd(e.target.value)
+                        }}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleBibleSearch}
+                    className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 transition duration-155 rounded text-xs font-bold cursor-pointer text-slate-100 shadow-md shadow-indigo-950/20"
+                  >
+                    Look Up Scripture
+                  </button>
+
+                  {/* Bible Results */}
+                  {bibleResults && (
+                    <div className="space-y-3 pt-3 border-t border-slate-850">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        SEARCH RESULT
+                      </div>
+                      <div className="space-y-2 text-xs font-medium text-slate-355 leading-relaxed bg-slate-950/60 p-3 rounded-lg border border-slate-900">
+                        {selectedTranslations.map((tId) => {
+                          const verseObj = (bibleResults[tId] || []).find((v: any) => v.verse === Number(bibleVerseStart))
+                          return (
+                            <div key={tId} className="space-y-0.5">
+                              <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider">{tId}:</span>
+                              <p className="italic">"{verseObj ? verseObj.text : 'Verse not found.'}"</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <button
+                        onClick={projectBiblePassage}
+                        className="w-full py-1.5 bg-emerald-650 hover:bg-emerald-600 transition duration-155 rounded text-xs font-bold cursor-pointer text-slate-100 shadow-md shadow-emerald-950/20"
+                      >
+                        Project Parallel Translation
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Hymnal Column */}
+                <div className="space-y-4 bg-slate-950/30 p-4 border border-slate-855 rounded-lg flex flex-col">
+                  <h3 className="text-xs font-extrabold text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-teal-400"></span>
+                    Hymnal Console
+                  </h3>
+
+                  <div className="flex gap-2">
+                    <div className="space-y-1 flex-1 text-xs">
+                      <label className="text-[10px] text-slate-500 uppercase font-semibold">Hymn Number (MHB)</label>
+                      <input
+                        type="number"
+                        value={hymnQuery}
+                        onChange={(e) => setHymnQuery(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={handleLoadHymn}
+                      className="px-4 py-2 mt-5 bg-teal-650 hover:bg-teal-600 transition duration-155 rounded text-xs font-bold cursor-pointer text-slate-100 shadow-md shadow-teal-950/20 self-start"
+                    >
+                      Load
+                    </button>
+                  </div>
+
+                  {/* Language display toggles */}
+                  {(hymnVerses.English.length > 0 || hymnVerses.Twi.length > 0) && (
+                    <div className="space-y-4 pt-3 border-t border-slate-850 flex-1 flex flex-col">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          MHB HYMN {hymnQuery}
+                        </span>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => setActiveHymnLanguage('English')}
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded transition duration-155 cursor-pointer ${
+                              activeHymnLanguage === 'English'
+                                ? 'bg-teal-650 text-slate-50'
+                                : 'bg-slate-950 text-slate-500 hover:text-slate-355'
+                            }`}
+                          >
+                            English
+                          </button>
+                          <button
+                            onClick={() => setActiveHymnLanguage('Twi')}
+                            className={`px-2 py-0.5 text-[10px] font-bold rounded transition duration-155 cursor-pointer ${
+                              activeHymnLanguage === 'Twi'
+                                ? 'bg-teal-650 text-slate-50'
+                                : 'bg-slate-950 text-slate-500 hover:text-slate-355'
+                            }`}
+                          >
+                            Twi (Asante)
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Hymn verses list */}
+                      <div className="flex-1 overflow-y-auto max-h-[220px] bg-slate-950/50 p-2 border border-slate-900 rounded-lg space-y-2">
+                        {hymnVerses[activeHymnLanguage].map((v) => {
+                          const isProjectedThisVerse = projHymnNum === Number(hymnQuery) && projVerseNum === v.verse_number
+                          return (
+                            <div
+                              key={v.id}
+                              onClick={() => projectHymnVerse(v.verse_number, activeHymnLanguage)}
+                              className={`p-3 rounded-lg border text-left cursor-pointer transition duration-155 text-xs font-semibold leading-relaxed whitespace-pre-line ${
+                                isProjectedThisVerse
+                                  ? 'bg-teal-950/40 border-teal-500 text-slate-100 shadow-md'
+                                  : 'bg-slate-900/30 border-slate-900 text-slate-400 hover:border-slate-800'
+                              }`}
+                            >
+                              <div className="text-[9px] font-bold text-teal-400 uppercase mb-1">
+                                Verse {v.verse_number} {isProjectedThisVerse && `(LIVE: ${projHymnLang.toUpperCase()})`}
+                              </div>
+                              {v.stanza_text}
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <div className="text-[10px] text-slate-500 italic text-center">
+                        Pro-Tip: Press the <kbd className="bg-slate-900 px-1 border border-slate-800 rounded font-bold font-mono">T</kbd> key to hot-swap languages instantly!
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </section>

@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3'
 import { app } from 'electron'
+import { seedDatabase } from './dbSeeder'
 import { join } from 'path'
 import { existsSync, mkdirSync } from 'fs'
 
@@ -147,6 +148,8 @@ export function initDatabase(pathOverride?: string): Database.Database {
         FOREIGN KEY (schedule_id) REFERENCES service_schedules(id) ON DELETE CASCADE
     );
   `)
+
+  seedDatabase(db)
 
   return db
 }

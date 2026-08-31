@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { initDatabase } from './db'
+import { initDatabase, getDb } from './db'
 import { DisplayService } from './services/DisplayService'
 import { VlcMediaService } from './services/VlcMediaService'
 import { RemoteControllerService } from './services/RemoteControllerService'
@@ -97,6 +97,55 @@ app.whenReady().then(() => {
   // Query Web Remote connection URL
   ipcMain.handle('get-remote-url', () => {
     return remoteService ? remoteService.getLocalUrl() : ''
+  })
+
+  // Database search handlers
+  ipcMain.handle('search-songs', (_event, query: string) => {
+    const db = getDb()
+    const stmt = db.prepare('SELECT * FROM songs WHERE title LIKE ? OR artist LIKE ?')
+    return stmt.all(`%${query}%`, `%${query}%`)
+  })
+
+  ipcMain.handle('get-song-sections', (_event, songId: string) => {
+    const db = getDb()
+    const stmt = db.prepare('SELECT * FROM song_sections WHERE song_id = ? ORDER BY section_order ASC')
+    return stmt.all(songId)
+  })
+
+  ipcMain.handle('get-installed-translations', () => {
+    const db = getDb()
+    const stmt = db.prepare('SELECT * FROM bible_translations WHERE is_installed = 1')
+    return stmt.all()
+  })
+
+  ipcMain.handle('lookup-scripture', (_event, book: string, chapter: number, verseStart: number, verseEnd: number, translationIds: string[]) => {
+    const db = getDb()
+    const results: Record<string, any[]> = {}
+    const stmt = db.prepare(
+      'SELECT * FROM bible_verses WHERE translation_id = ? AND book_name = ? AND chapter = ? AND verse >= ? AND verse <= ? ORDER BY verse ASC'
+    )
+    for (const transId of translationIds) {
+      results[transId] = stmt.all(transId, book, chapter, verseStart, verseEnd)
+    }
+    return results
+  })
+
+  ipcMain.handle('search-hymns', (_event, query: string) => {
+    const db = getDb()
+    const stmt = db.prepare('SELECT * FROM hymn_entries WHERE title LIKE ? OR hymn_number = ?')
+    const num = parseInt(query)
+    return stmt.all(`%${query}%`, isNaN(num) ? -1 : num)
+  })
+
+  ipcMain.handle('get-hymn-verses-parallel', (_event, hymnNumber: number) => {
+    const db = getDb()
+    const entries = db.prepare('SELECT * FROM hymn_entries WHERE hymn_number = ?').all(hymnNumber) as any[]
+    const results: Record<string, any[]> = {}
+    const stmt = db.prepare('SELECT * FROM hymn_verses WHERE hymn_entry_id = ? ORDER BY verse_number ASC')
+    for (const entry of entries) {
+      results[entry.language] = stmt.all(entry.id)
+    }
+    return results
   })
 
   // VLC Media Remote Control IPC handler

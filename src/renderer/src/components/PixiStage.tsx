@@ -223,33 +223,79 @@ export default function PixiStage() {
       textContainer.removeChildAt(0).destroy({ children: true })
     }
 
-    const style = new TextStyle({
-      fontFamily: theme.fontFamily || 'Arial',
-      fontSize: theme.fontSize || 48,
-      fill: theme.textColor || '#ffffff',
-      align: 'center',
-      wordWrap: true,
-      wordWrapWidth: width * 0.8,
-      dropShadow: {
-        color: '#000000',
-        alpha: 0.8,
-        blur: 8,
-        distance: 4,
-        angle: Math.PI / 4
+    const colCount = Math.max(1, ...lyrics.map((line) => line.split('|').length))
+
+    if (colCount > 1) {
+      const colsText: string[][] = Array.from({ length: colCount }, () => [])
+      lyrics.forEach((line) => {
+        const parts = line.split('|')
+        for (let colIdx = 0; colIdx < colCount; colIdx++) {
+          colsText[colIdx].push((parts[colIdx] || '').trim())
+        }
+      })
+
+      const colWidth = (width * 0.85) / colCount
+      const totalWidth = width * 0.95
+      const startX = (width - totalWidth) / 2
+      const colGap = colCount > 1 ? (totalWidth - colWidth * colCount) / (colCount - 1) : 0
+
+      for (let colIdx = 0; colIdx < colCount; colIdx++) {
+        const xCenter = startX + colIdx * (colWidth + colGap) + colWidth / 2
+        const colStyle = new TextStyle({
+          fontFamily: theme.fontFamily || 'Arial',
+          fontSize: Math.max(16, (theme.fontSize || 48) - colCount * 6),
+          fill: theme.textColor || '#ffffff',
+          align: 'center',
+          wordWrap: true,
+          wordWrapWidth: colWidth,
+          dropShadow: {
+            color: '#000000',
+            alpha: 0.8,
+            blur: 8,
+            distance: 4,
+            angle: Math.PI / 4
+          }
+        })
+
+        const colText = colsText[colIdx].join('\n')
+        const pixiText = new Text({
+          text: colText,
+          style: colStyle
+        })
+        pixiText.anchor.set(0.5)
+        pixiText.x = xCenter
+        pixiText.y = height / 2
+        textContainer.addChild(pixiText)
       }
-    })
+    } else {
+      const style = new TextStyle({
+        fontFamily: theme.fontFamily || 'Arial',
+        fontSize: theme.fontSize || 48,
+        fill: theme.textColor || '#ffffff',
+        align: 'center',
+        wordWrap: true,
+        wordWrapWidth: width * 0.8,
+        dropShadow: {
+          color: '#000000',
+          alpha: 0.8,
+          blur: 8,
+          distance: 4,
+          angle: Math.PI / 4
+        }
+      })
 
-    const fullText = lyrics.join('\n')
-    const pixiText = new Text({
-      text: fullText,
-      style
-    })
+      const fullText = lyrics.join('\n')
+      const pixiText = new Text({
+        text: fullText,
+        style
+      })
 
-    pixiText.anchor.set(0.5)
-    pixiText.x = width / 2
-    pixiText.y = height / 2
+      pixiText.anchor.set(0.5)
+      pixiText.x = width / 2
+      pixiText.y = height / 2
 
-    textContainer.addChild(pixiText)
+      textContainer.addChild(pixiText)
+    }
   }
 
   return <canvas ref={canvasRef} className="h-full w-full block" />

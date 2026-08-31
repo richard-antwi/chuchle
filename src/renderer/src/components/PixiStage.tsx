@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Application, Container, Text, TextStyle, Graphics, Texture, Sprite, ColorMatrixFilter } from 'pixi.js'
 import { useDisplayStore } from '../stores/useDisplayStore'
+import { useDiagnosticsStore } from '../stores/useDiagnosticsStore'
 import { CameraService } from '../services/CameraService'
 import { createChromaKeyFilter } from './filters/ChromaKeyFilter'
 
@@ -73,9 +74,11 @@ export default function PixiStage() {
         colorMatrixRef.current = new ColorMatrixFilter()
         chromaKeyFilterRef.current = createChromaKeyFilter()
 
+        useDiagnosticsStore.getState().setRendererStatus('ready')
         renderScene()
       } catch (err) {
         console.error('PixiStage initialization error:', err)
+        useDiagnosticsStore.getState().setRendererStatus('fallback')
       }
     }
 
@@ -86,7 +89,7 @@ export default function PixiStage() {
       cleanupCameraStream()
       if (app) {
         try {
-          app.destroy(true, { children: true })
+          app.destroy(true, { children: true, texture: true })
         } catch (e) {
           console.warn('Pixi destroy warning:', e)
         }

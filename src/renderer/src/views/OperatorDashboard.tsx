@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import MenuBar from '../components/dashboard/MenuBar'
 import DashboardToolbar from '../components/dashboard/DashboardToolbar'
 import LibraryAccordionPanel from '../components/dashboard/LibraryAccordionPanel'
@@ -22,6 +22,8 @@ import ParallelScriptureView from './tabs/ParallelScriptureView'
 import MusicianStageTab from './tabs/MusicianStageTab'
 
 import { useDisplayStore } from '../stores/useDisplayStore'
+import { usePresentationStore } from '../stores/usePresentationStore'
+import { AutosaveService } from '../services/AutosaveService'
 import { ObsControllerService } from '../services/ObsControllerService'
 
 export default function OperatorDashboard() {
@@ -43,67 +45,43 @@ export default function OperatorDashboard() {
 
   const [selectedSongId, setSelectedSongId] = useState<string>('song_apostles_creed')
 
-  // Service Queue State
-  const [serviceQueue, setServiceQueue] = useState<ServiceQueueItem[]>([
-    {
-      id: 'svc_apostles_creed',
-      title: 'Apostles Creed',
-      sub: 'Creed Confession',
-      type: 'song',
-      slides: [
-        'I Believe in God the Father Almighty,\nMaker of heaven and earth:\nAnd in Jesus Christ his only son rendering,\nBorn of the Virgin Mary,',
-        'Suffered under Pontius Pilate, Was Crucified, dead, and buried,\nHe descended into hell; The third day He rose again from the dead.\nHe ascended into heaven',
-        'And sitteth on the right hand of God the Father Almighty;\nFrom thence He shall come to judge the quick and the dead.\nI believe in the Holy Ghost; The holy Catholic church;',
-        'The communion of Saints; The Forgiveness of sins;\nThe Resurrection of the body, And the life everlasting. Amen'
-      ]
-    },
-    {
-      id: 'svc_amazing_grace',
-      title: 'Amazing Grace',
-      sub: 'Verse 2 of 4 — on air',
-      type: 'song',
-      slides: [
-        'Amazing grace how sweet the sound\nThat saved a wretch like me',
-        'Twas grace that taught\nmy heart to fear',
-        'And grace my fears\nrelieved',
-        'How precious did\nthat grace appear'
-      ]
-    },
-    {
-      id: 'svc_how_great',
-      title: 'How Great Thou Art',
-      sub: '4 verses, 1 chorus',
-      type: 'song',
-      slides: ['O Lord my God,\nWhen I in awesome wonder', 'Then sings my soul,\nMy Saviour God, to Thee']
-    }
-  ])
+  // CENTRALIZED PRESENTATION STORE HOOKS
+  const serviceQueue = usePresentationStore((state) => state.serviceQueue)
+  const stagedItemId = usePresentationStore((state) => state.previewItemId) || 'svc_apostles_creed'
+  const stagedSlideIndex = usePresentationStore((state) => state.previewSlideIndex)
+  const liveItemId = usePresentationStore((state) => state.liveItemId) || 'svc_apostles_creed'
+  const liveSlideIndex = usePresentationStore((state) => state.liveSlideIndex)
+  const isBlanked = usePresentationStore((state) => state.isBlanked)
+  const isCleared = usePresentationStore((state) => state.isCleared)
 
-  // 2-STAGE COMMIT STATES
-  const [stagedItemId, setStagedItemId] = useState<string>('svc_apostles_creed')
-  const [stagedSlideIndex, setStagedSlideIndex] = useState<number>(0)
-
-  const [liveItemId, setLiveItemId] = useState<string>('svc_apostles_creed')
-  const [liveSlideIndex, setLiveSlideIndex] = useState<number>(0)
-
-  const [isBlanked, setIsBlanked] = useState<boolean>(false)
-  const [isCleared, setIsCleared] = useState<boolean>(false)
+  const selectServiceItem = usePresentationStore((state) => state.selectServiceItem)
+  const setPreviewSlide = usePresentationStore((state) => state.setPreviewSlide)
+  const commitPreviewToLive = usePresentationStore((state) => state.commitPreviewToLive)
+  const setLiveSlideDirect = usePresentationStore((state) => state.setLiveSlideDirect)
+  const toggleBlank = usePresentationStore((state) => state.toggleBlank)
+  const toggleClearText = usePresentationStore((state) => state.toggleClearText)
+  const addServiceItem = usePresentationStore((state) => state.addServiceItem)
+  const setServiceQueue = usePresentationStore((state) => state.setServiceQueue)
+  const navigateLiveSlide = usePresentationStore((state) => state.navigateLiveSlide)
+  const setFirstSlide = usePresentationStore((state) => state.setFirstSlide)
+  const setLastSlide = usePresentationStore((state) => state.setLastSlide)
 
   const [obsConnected, setObsConnected] = useState(false)
   const [remoteUrl, setRemoteUrl] = useState('')
 
-  // Zustand Display Store Hooks
-  const updateStoreLyrics = useDisplayStore((state) => state.setLyrics)
-  const setStageInfo = useDisplayStore((state) => state.setStageInfo)
-  const activeBackground = useDisplayStore((state) => state.activeBackground)
-
   // Derived Items
   const stagedItem = serviceQueue.find((i) => i.id === stagedItemId) || serviceQueue[0]
-  const stagedSlides = stagedItem ? stagedItem.slides || [] : []
+  const stagedSlides = (stagedItem ? stagedItem.slides || [] : []) as string[]
 
   const liveItem = serviceQueue.find((i) => i.id === liveItemId) || serviceQueue[0]
-  const liveSlides = liveItem ? liveItem.slides || [] : []
+  const liveSlides = (liveItem ? liveItem.slides || [] : []) as string[]
 
   const uiThemeMode = useDisplayStore((state) => state.uiThemeMode)
+
+  useEffect(() => {
+    // Initialize Autosave Engine on mount
+    AutosaveService.init()
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement
@@ -145,74 +123,26 @@ export default function OperatorDashboard() {
     setObsConnected(ObsControllerService.getConnected())
   }, [])
 
-  // Send updates to WebGL Audience outputs & IPC state
-  const broadcastLiveState = useCallback(
-    (itemTitle: string, text: string, nextText: string) => {
-      updateStoreLyrics([text])
-      setStageInfo({ nextVerse: nextText })
-      ObsControllerService.handleSlideTransition(itemTitle, text, activeBackground.type === 'video')
-
-      if (window.electron && window.electron.ipcRenderer) {
-        window.electron.ipcRenderer.send('update-projection-state', {
-          currentLyrics: [text],
-          stageInfo: { nextVerse: nextText }
-        })
-      }
-    },
-    [updateStoreLyrics, setStageInfo, activeBackground]
-  )
-
-  // COMMIT FUNCTION: Send Preview -> Live
-  const handleCommitPreviewToLive = useCallback(() => {
-    setLiveItemId(stagedItemId)
-    setLiveSlideIndex(stagedSlideIndex)
-    setIsBlanked(false)
-
-    setServiceQueue((prev) =>
-      prev.map((i) => ({
-        ...i,
-        isCurrent: i.id === stagedItemId
-      }))
-    )
-
-    const liveText = stagedSlides[stagedSlideIndex] || ''
-    const nextText = stagedSlides[stagedSlideIndex + 1] || 'End of item'
-    broadcastLiveState(stagedItem.title, liveText, nextText)
-  }, [stagedItemId, stagedSlideIndex, stagedItem, stagedSlides, broadcastLiveState])
-
-  // Direct Live Jump
-  const handleSelectLiveSlideDirect = (idx: number) => {
-    setLiveSlideIndex(idx)
-    setIsBlanked(false)
-    const text = liveSlides[idx] || ''
-    const nextText = liveSlides[idx + 1] || 'End of item'
-    broadcastLiveState(liveItem.title, text, nextText)
-  }
-
   // Queue Item Stage Action
-  const handleStageServiceItem = (item: ServiceQueueItem) => {
-    setStagedItemId(item.id)
-    setStagedSlideIndex(0)
+  const handleStageServiceItem = (item: any) => {
+    selectServiceItem(item.id)
   }
 
-  const handleAddToServiceQueue = (item: ServiceQueueItem) => {
-    setServiceQueue((prev) => [...prev, item])
-    setStagedItemId(item.id)
-    setStagedSlideIndex(0)
+  const handleAddToServiceQueue = (item: any) => {
+    addServiceItem(item)
   }
 
   const handleSelectSongFromLibrary = (song: SongItem) => {
     setSelectedSongId(song.id)
     const existing = serviceQueue.find((i) => i.title.toLowerCase().includes(song.title.toLowerCase()))
     if (existing) {
-      setStagedItemId(existing.id)
-      setStagedSlideIndex(0)
+      selectServiceItem(existing.id)
     }
   }
 
   const handleSendSongDirectToLive = (song: SongItem) => {
     setSelectedSongId(song.id)
-    const newQueueItem: ServiceQueueItem = {
+    const newQueueItem: any = {
       id: `svc_${song.id}_${Date.now()}`,
       title: song.title,
       sub: song.author || 'Song library item',
@@ -223,12 +153,8 @@ export default function OperatorDashboard() {
         'Was blind but now I see'
       ]
     }
-    setServiceQueue((prev) => [...prev, newQueueItem])
-    setStagedItemId(newQueueItem.id)
-    setStagedSlideIndex(0)
-    setLiveItemId(newQueueItem.id)
-    setLiveSlideIndex(0)
-    broadcastLiveState(newQueueItem.title, newQueueItem.slides![0], newQueueItem.slides![1])
+    addServiceItem(newQueueItem)
+    commitPreviewToLive()
   }
 
   // Disk Service File Save / Open Handlers
@@ -244,59 +170,74 @@ export default function OperatorDashboard() {
       if (Array.isArray(loaded)) {
         setServiceQueue(loaded)
         if (loaded[0]) {
-          setStagedItemId(loaded[0].id)
-          setStagedSlideIndex(0)
+          selectServiceItem(loaded[0].id)
         }
       }
     }
   }
 
-  // Keyboard Shortcuts (Section 2 OpenLP-Pattern)
+  // Production Emergency Keyboard Controls & Typing Focus Safety
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      // Guard against typing in form inputs, textareas, selects, or editable elements
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) {
+        return
+      }
 
       if (e.key === 'ArrowUp' || e.key === 'PageUp') {
         e.preventDefault()
         const currentIdx = serviceQueue.findIndex((i) => i.id === stagedItemId)
         if (currentIdx > 0) {
-          const nextItem = serviceQueue[currentIdx - 1]
-          setStagedItemId(nextItem.id)
-          setStagedSlideIndex(0)
+          selectServiceItem(serviceQueue[currentIdx - 1].id)
         }
       } else if (e.key === 'ArrowDown' || e.key === 'PageDown') {
         e.preventDefault()
         const currentIdx = serviceQueue.findIndex((i) => i.id === stagedItemId)
         if (currentIdx !== -1 && currentIdx < serviceQueue.length - 1) {
-          const nextItem = serviceQueue[currentIdx + 1]
-          setStagedItemId(nextItem.id)
-          setStagedSlideIndex(0)
+          selectServiceItem(serviceQueue[currentIdx + 1].id)
         }
       } else if (e.key === 'ArrowRight') {
         e.preventDefault()
-        if (stagedSlideIndex < stagedSlides.length - 1) {
-          setStagedSlideIndex(stagedSlideIndex + 1)
-        }
+        navigateLiveSlide(1)
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault()
-        if (stagedSlideIndex > 0) {
-          setStagedSlideIndex(stagedSlideIndex - 1)
-        }
+        navigateLiveSlide(-1)
+      } else if (e.key === 'Home') {
+        e.preventDefault()
+        setFirstSlide()
+      } else if (e.key === 'End') {
+        e.preventDefault()
+        setLastSlide()
       } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
-        handleCommitPreviewToLive()
+        commitPreviewToLive()
       } else if (e.key === 'Escape' || e.code === 'KeyB') {
         e.preventDefault()
-        setIsBlanked((prev) => !prev)
+        toggleBlank()
       } else if (e.code === 'KeyC') {
         e.preventDefault()
-        setIsCleared((prev) => !prev)
+        toggleClearText()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [serviceQueue, stagedItemId, stagedSlideIndex, stagedSlides, handleCommitPreviewToLive])
+  }, [
+    serviceQueue,
+    stagedItemId,
+    selectServiceItem,
+    navigateLiveSlide,
+    setFirstSlide,
+    setLastSlide,
+    commitPreviewToLive,
+    toggleBlank,
+    toggleClearText
+  ])
 
   // Subsystem Handoffs
   const handleProjectBible = (lines: string[]) => {
@@ -354,19 +295,19 @@ export default function OperatorDashboard() {
 
             {/* Column 2: Dual Preview & Live Panels (Center Flex-1) */}
             <OpenLpCenterPanel
-              stagedTitle={stagedItem.title}
+              stagedTitle={stagedItem?.title || 'No item staged'}
               stagedSlides={stagedSlides}
               stagedSlideIndex={stagedSlideIndex}
-              onSelectStagedSlide={setStagedSlideIndex}
-              onSendLive={handleCommitPreviewToLive}
-              liveTitle={liveItem.title}
+              onSelectStagedSlide={setPreviewSlide}
+              onSendLive={commitPreviewToLive}
+              liveTitle={liveItem?.title || 'No item live'}
               liveSlides={liveSlides}
               liveSlideIndex={liveSlideIndex}
               isBlanked={isBlanked}
               isCleared={isCleared}
-              onSelectLiveSlideDirect={handleSelectLiveSlideDirect}
-              onToggleBlank={() => setIsBlanked(!isBlanked)}
-              onToggleClear={() => setIsCleared(!isCleared)}
+              onSelectLiveSlideDirect={setLiveSlideDirect}
+              onToggleBlank={toggleBlank}
+              onToggleClear={toggleClearText}
             />
 
             {/* Column 3: Service Order & Themes (Right ~260px) */}
@@ -411,7 +352,7 @@ export default function OperatorDashboard() {
                 onAddToService={handleAddToServiceQueue}
                 onSendLiveDirect={(item) => {
                   handleAddToServiceQueue(item)
-                  handleCommitPreviewToLive()
+                  commitPreviewToLive()
                 }}
               />
             ) : activeMode === 'decks' ? (
@@ -419,7 +360,7 @@ export default function OperatorDashboard() {
                 onAddToService={handleAddToServiceQueue}
                 onSendLiveDirect={(item) => {
                   handleAddToServiceQueue(item)
-                  handleCommitPreviewToLive()
+                  commitPreviewToLive()
                 }}
               />
             ) : activeMode === 'parallel' ? (

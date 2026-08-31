@@ -1,4 +1,5 @@
 import PixiStage from '../PixiStage'
+import PresentationErrorBoundary from '../PresentationErrorBoundary'
 
 interface OpenLpCenterPanelProps {
   // Staged Preview Item State
@@ -224,7 +225,9 @@ export default function OpenLpCenterPanel({
                 [ TEXT OVERLAY CLEARED ]
               </div>
             ) : liveSlides[liveSlideIndex] ? (
-              <PixiStage />
+              <PresentationErrorBoundary>
+                <PixiStage />
+              </PresentationErrorBoundary>
             ) : (
               <span className="text-app-text-3 italic text-xs">No live output projected</span>
             )}

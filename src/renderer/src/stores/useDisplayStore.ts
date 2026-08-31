@@ -124,7 +124,7 @@ export const useDisplayStore = create<DisplayStore>()(
 )
 
 function syncStateToMain(state: ProjectionState): void {
-  if (window.electron && window.electron.ipcRenderer) {
+  if (typeof window !== 'undefined' && window.electron && window.electron.ipcRenderer) {
     const rawState = {
       currentLyrics: state.currentLyrics,
       activeBackground: state.activeBackground,
@@ -138,7 +138,7 @@ function syncStateToMain(state: ProjectionState): void {
   }
 }
 
-if (window.electron && window.electron.ipcRenderer) {
+if (typeof window !== 'undefined' && window.electron && window.electron.ipcRenderer) {
   window.electron.ipcRenderer.on('projection-state-updated', (_event, newState) => {
     useDisplayStore.getState().updateState(newState)
   })

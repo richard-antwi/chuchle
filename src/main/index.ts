@@ -156,6 +156,27 @@ app.whenReady().then(() => {
   })
 
   // Service File Save & Load IPC Handlers
+  ipcMain.handle('save-autosave-state', async (_event, stateData: any) => {
+    try {
+      const autosavePath = join(app.getPath('userData'), '.churchle_autosave.json')
+      await writeFile(autosavePath, JSON.stringify(stateData, null, 2), 'utf-8')
+      return true
+    } catch (e) {
+      console.error('Autosave file write error:', e)
+      return false
+    }
+  })
+
+  ipcMain.handle('load-autosave-state', async () => {
+    try {
+      const autosavePath = join(app.getPath('userData'), '.churchle_autosave.json')
+      const content = await readFile(autosavePath, 'utf-8')
+      return JSON.parse(content)
+    } catch (e) {
+      return null
+    }
+  })
+
   ipcMain.handle('save-service-file', async (_event, serviceData: any) => {
     const { canceled, filePath } = await dialog.showSaveDialog({
       title: 'Save Order of Service File',

@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { ServiceQueueItem } from './OrderOfServicePanel'
 
 interface ServiceAndThemesPanelProps {
-  queueItems: ServiceQueueItem[]
+  queueItems: any[]
   stagedItemId: string
-  onSelectQueueItem: (item: ServiceQueueItem) => void
+  onSelectQueueItem: (item: any) => void
   onSaveService?: () => void
   onOpenService?: () => void
 }

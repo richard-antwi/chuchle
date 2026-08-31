@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Churchle — Dashboard Mockup</title>
+<style>
+  :root{
+    --bg: #eef0f3;
+    --panel: #ffffff;
+    --border: #d7dbe1;
+    --border-strong: #b9c0ca;
+    --text: #22262c;
+    --text-2: #5b6270;
+    --text-3: #9399a4;
+    --accent: #2f6fed;
+    --accent-bg: #e8f0fe;
+    --toolbar: #f6f7f9;
+    --live: #d8352c;
+    --live-bg: #fdeceb;
+    --font: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden;
+  }
+
+  /* ---------- Menu bar ---------- */
+  .menubar{
+    display:flex;
+    gap:18px;
+    padding:5px 12px;
+    background: var(--toolbar);
+    border-bottom: 1px solid var(--border);
+    font-size:12.5px;
+    color: var(--text-2);
+  }
+  .menubar span{cursor:default;}
+  .menubar span:hover{color:var(--text);}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:6px 10px;
+    background: var(--toolbar);
+    border-bottom: 1px solid var(--border);
+  }
+  .tbtn{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:3px;
+    width:56px; height:46px;
+    border-radius:6px;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--text-2);
+    font-size:10.5px;
+    cursor:pointer;
+  }
+  .tbtn svg{width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.6;}
+  .tbtn:hover{background:#eceff3;}
+  .tbtn.active{
+    background: var(--accent-bg);
+    border-color:#c6d9fb;
+    color: var(--accent);
+  }
+  .tbtn.active svg{stroke:var(--accent);}
+  .tdiv{width:1px;height:32px;background:var(--border);margin:0 8px;}
+
+  .toolbar-spacer{flex:1;}
+  .live-indicator{
+    display:flex;align-items:center;gap:6px;
+    padding:6px 14px;
+    background: var(--live-bg);
+    color: var(--live);
+    border:1px solid #f4c6c2;
+    border-radius:6px;
+    font-weight:600;
+    font-size:12px;
+    margin-right:8px;
+  }
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--live);}
+
+  /* ---------- Main layout ---------- */
+  .main{flex:1;display:flex;min-height:0;}
+
+  .panel{
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+
+  /* Left: library */
+  .library{width:230px;}
+  .library-search{
+    margin:10px;
+    display:flex;align-items:center;gap:6px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:6px 8px;
+    color:var(--text-3);
+  }
+  .library-search input{
+    border:none;outline:none;font-size:12.5px;flex:1;font-family:var(--font);color:var(--text);
+  }
+  .library-list{overflow-y:auto;flex:1;padding:0 6px 10px;}
+  .lib-item{
+    padding:7px 8px;border-radius:5px;color:var(--text-2);
+    cursor:pointer; font-size:12.5px; margin-bottom:1px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .lib-item:hover{background:#f2f4f7;}
+  .lib-item.sel{background:var(--accent-bg);color:var(--accent);font-weight:600;}
+  .lib-item svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.6;flex-shrink:0;}
+  .lib-section-label{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--text-3); padding:12px 12px 4px;font-weight:600;
+  }
+
+  /* Middle: order of service */
+  .service{width:290px;}
+  .panel-head{
+    padding:10px 12px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .panel-head h2{font-size:12.5px;margin:0;font-weight:600;color:var(--text);}
+  .panel-head .count{font-size:11px;color:var(--text-3);}
+  .service-list{flex:1;overflow-y:auto;padding:6px;}
+  .svc-item{
+    display:flex;align-items:center;gap:9px;
+    padding:9px 9px;border-radius:6px;margin-bottom:2px;
+    cursor:pointer;border:1px solid transparent;
+  }
+  .svc-item:hover{background:#f6f7f9;}
+  .svc-item.current{
+    background:var(--live-bg);border-color:#f4c6c2;
+  }
+  .svc-icon{
+    width:26px;height:26px;border-radius:5px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:#eef0f3;color:var(--text-2);
+  }
+  .svc-icon svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .svc-item.current .svc-icon{background:var(--live);color:#fff;}
+  .svc-title{font-size:12.5px;font-weight:500;color:var(--text);}
+  .svc-sub{font-size:11px;color:var(--text-3);margin-top:1px;}
+
+  /* Right: preview + live */
+  .stage{flex:1;display:flex;flex-direction:column;border-right:none;}
+  .stage-split{flex:1;display:flex;flex-direction:column;min-height:0;}
+  .stage-block{flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:1px solid var(--border);}
+  .stage-block:last-child{border-bottom:none;}
+  .stage-label{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:.03em;
+    text-transform:uppercase;
+  }
+  .stage-label.live{color:var(--live);}
+  .stage-label.prev{color:var(--text-2);}
+  .slide-canvas{
+    margin:0 14px 12px;
+    aspect-ratio:16/9;
+    background:#0c0d10;
+    border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    color:#f4f4f2;
+    font-size:26px;
+    font-weight:600;
+    text-align:center;
+    line-height:1.35;
+    padding:14px;
+    border:1px solid #000;
+  }
+  .thumb-row{
+    display:flex;gap:8px;padding:0 14px 14px;overflow-x:auto;
+  }
+  .thumb{
+    flex:0 0 96px;aspect-ratio:16/9;background:#0c0d10;border-radius:4px;
+    color:#e8e8e6;font-size:9px;display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:6px;border:2px solid transparent;cursor:pointer;
+  }
+  .thumb.sel{border-color:var(--accent);}
+  .thumb.on-air{border-color:var(--live);}
+
+  /* ---------- Status bar ---------- */
+  .statusbar{
+    display:flex;align-items:center;gap:18px;
+    padding:6px 14px;
+    background: var(--toolbar);
+    border-top:1px solid var(--border);
+    font-size:11.5px;color:var(--text-2);
+  }
+  .stat{display:flex;align-items:center;gap:6px;}
+  .stat svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .dot{width:7px;height:7px;border-radius:50%;}
+  .dot.ok{background:#2fa84f;}
+  .dot.warn{background:#e0a712;}
+  .statusbar .fill{flex:1;}
+  .vu{width:120px;height:6px;background:#dfe3e8;border-radius:3px;overflow:hidden;}
+  .vu-fill{height:100%;width:62%;background:linear-gradient(90deg,#2fa84f 0%,#2fa84f 60%,#e0a712 80%,#d8352c 100%);}
+</style>
+</head>
+<body>
+
+  <div class="menubar">
+    <span>File</span><span>Edit</span><span>View</span><span>Service</span><span>Tools</span><span>Settings</span><span>Help</span>
+  </div>
+
+  <div class="toolbar">
+    <button class="tbtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New service</button>
+    <button class="tbtn"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/></svg>Open</button>
+    <button class="tbtn"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V4"/></svg>Save</button>
+    <div class="tdiv"></div>
+    <button class="tbtn active" data-mode="slides"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M7 9h10M7 13h6"/></svg>Slides</button>
+    <button class="tbtn" data-mode="bible"><svg viewBox="0 0 24 24"><path d="M4 5c4 0 6 1 8 3 2-2 4-3 8-3v14c-4 0-6 1-8 3-2-2-4-3-8-3z"/></svg>Bible</button>
+    <button class="tbtn" data-mode="hymnal"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>Hymnal</button>
+    <button class="tbtn" data-mode="camera"><svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>Camera</button>
+    <button class="tbtn" data-mode="audio"><svg viewBox="0 0 24 24"><path d="M4 15h3l4 4V5l-4 4H4z"/><path d="M15 9a4 4 0 010 6M18 6a8 8 0 010 12"/></svg>Audio</button>
+    <button class="tbtn" data-mode="stream"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="12" rx="1"/><path d="M21 8l-4 3 4 3z"/></svg>Streaming</button>
+    <div class="toolbar-spacer"></div>
+    <div class="live-indicator"><span class="live-dot"></span>On air</div>
+  </div>
+
+  <div class="main">
+
+    <!-- Left panel: Library -->
+    <div class="panel library">
+      <div class="library-search">
+        <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input placeholder="Search songs">
+      </div>
+      <div class="library-list">
+        <div class="lib-section-label">Songs</div>
+        <div class="lib-item sel"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>Amazing Grace</div>
+        <div class="lib-item"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>How Great Thou Art</div>
+        <div class="lib-item"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>Blessed Assurance</div>
+        <div class="lib-item"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>Great Is Thy Faithfulness</div>
+        <div class="lib-item"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>It Is Well</div>
+        <div class="lib-section-label">Recently used</div>
+        <div class="lib-item"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>Nyame Ye</div>
+        <div class="lib-item"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>10,000 Reasons</div>
+      </div>
+    </div>
+
+    <!-- Middle panel: Order of service -->
+    <div class="panel service">
+      <div class="panel-head">
+        <h2>Order of service</h2>
+        <span class="count">Sun 31 Aug — 8 items</span>
+      </div>
+      <div class="service-list">
+        <div class="svc-item"><div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M4 5c4 0 6 1 8 3 2-2 4-3 8-3v14c-4 0-6 1-8 3-2-2-4-3-8-3z"/></svg></div><div><div class="svc-title">Call to worship — Psalm 100</div><div class="svc-sub">Scripture reading</div></div></div>
+        <div class="svc-item current"><div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div><div><div class="svc-title">Amazing Grace</div><div class="svc-sub">Verse 2 of 4 — on air</div></div></div>
+        <div class="svc-item"><div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div><div><div class="svc-title">How Great Thou Art</div><div class="svc-sub">4 verses, 1 chorus</div></div></div>
+        <div class="svc-item"><div class="svc-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></div><div><div class="svc-title">Announcements</div><div class="svc-sub">PDF import — 3 slides</div></div></div>
+        <div class="svc-item"><div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M4 5c4 0 6 1 8 3 2-2 4-3 8-3v14c-4 0-6 1-8 3-2-2-4-3-8-3z"/></svg></div><div><div class="svc-title">Sermon text — John 3:16</div><div class="svc-sub">Parallel KJV / NIV</div></div></div>
+        <div class="svc-item"><div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div><div><div class="svc-title">Nyame Ye</div><div class="svc-sub">Twi / English hymnal</div></div></div>
+        <div class="svc-item"><div class="svc-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg></div><div><div class="svc-title">Offering</div><div class="svc-sub">Background loop</div></div></div>
+        <div class="svc-item"><div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div><div><div class="svc-title">Blessed Assurance</div><div class="svc-sub">Closing hymn</div></div></div>
+      </div>
+    </div>
+
+    <!-- Right panel: preview + live -->
+    <div class="panel stage" style="border-right:none;">
+      <div class="stage-split">
+        <div class="stage-block">
+          <div class="stage-label live"><span class="live-dot"></span>Live output</div>
+          <div class="slide-canvas">Twas grace that taught<br>my heart to fear</div>
+          <div class="thumb-row">
+            <div class="thumb">Amazing grace<br>how sweet the sound</div>
+            <div class="thumb on-air">Twas grace that taught<br>my heart to fear</div>
+            <div class="thumb">And grace my fears<br>relieved</div>
+            <div class="thumb">How precious did<br>that grace appear</div>
+          </div>
+        </div>
+        <div class="stage-block">
+          <div class="stage-label prev">Preview — next slide</div>
+          <div class="slide-canvas" style="font-size:20px;">And grace my fears<br>relieved</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="statusbar">
+    <div class="stat"><span class="dot ok"></span>Audience display connected</div>
+    <div class="stat"><span class="dot ok"></span>Stage monitor connected</div>
+    <div class="stat"><span class="dot warn"></span>Foyer display windowed</div>
+    <div class="stat"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="12" rx="1"/><path d="M21 8l-4 3 4 3z"/></svg>OBS connected</div>
+    <div class="fill"></div>
+    <div class="stat">Master<div class="vu"><div class="vu-fill"></div></div></div>
+  </div>
+
+<script>
+  document.querySelectorAll('.tbtn[data-mode]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tbtn[data-mode]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.thumb').forEach(t=>{
+    t.addEventListener('click',()=>{
+      document.querySelectorAll('.thumb').forEach(x=>x.classList.remove('sel'));
+      t.classList.add('sel');
+    });
+  });
+</script>
+
+</body>
+</html>

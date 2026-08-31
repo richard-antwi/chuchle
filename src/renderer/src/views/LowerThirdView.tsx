@@ -5,13 +5,13 @@ export default function LowerThirdView() {
   const theme = useDisplayStore((state) => state.activeTheme)
 
   return (
-    <div className="h-screen w-screen bg-transparent text-slate-100 flex flex-col justify-end p-12 overflow-hidden select-none">
+    <div className="h-screen w-screen bg-transparent text-[#22262c] flex flex-col justify-end p-10 overflow-hidden select-none">
       {lyrics.length > 0 && (
         <div
-          className="w-full max-w-5xl mx-auto mb-4 bg-slate-950/85 border border-slate-900/50 rounded-2xl px-10 py-6 backdrop-blur-md shadow-2xl flex items-center justify-center min-h-[90px] transition duration-200"
+          className="w-full max-w-5xl mx-auto mb-4 bg-white/95 border-l-4 border-l-[#2f6fed] border border-[#d7dbe1] rounded-xl px-10 py-5 shadow-2xl backdrop-blur-sm flex items-center justify-center min-h-[85px] transition duration-200"
           style={{ fontFamily: theme.fontFamily || 'Arial' }}
         >
-          <p className="text-xl sm:text-2xl font-extrabold text-center leading-relaxed text-slate-100 drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)] tracking-wide whitespace-pre-line">
+          <p className="text-xl sm:text-2xl font-black text-center leading-relaxed text-[#22262c] tracking-wide whitespace-pre-line drop-shadow-sm">
             {lyrics.join('\n')}
           </p>
         </div>
